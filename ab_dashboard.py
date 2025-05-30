@@ -53,19 +53,26 @@ elif option == "📊 A/B Test & Data Quality Checker":
 
     test_method = st.radio("Choose test method", ["Frequentist", "Bayesian"])
 
+    
     st.markdown("### Upload your CSV file")
     uploaded_file = st.file_uploader("Upload a file with at least two columns: `variant` and `metric`", type="csv")
 
-    if uploaded_file:
+    use_sample = st.checkbox("Or use a built-in sample dataset")
+
+    if uploaded_file or use_sample:
         try:
-            df = pd.read_csv(uploaded_file)
+            if uploaded_file:
+                df = pd.read_csv(uploaded_file)
+            else:
+                df = pd.read_csv("sample_ab_test_data.csv")
 
             required_cols = {"variant", "metric"}
             if not required_cols.issubset(set(df.columns)):
                 st.error("Uploaded file must contain at least `variant` and `metric` columns.")
             else:
-                st.success("✅ File uploaded successfully.")
+                st.success("✅ Data loaded successfully.")
                 st.dataframe(df.head())
+
 
                 # Proceed with sample ratio check, normality, and A/B test
                 df = df.rename(columns={"variant": "group", "metric": "converted"})  # reuse existing functions
