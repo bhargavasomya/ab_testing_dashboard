@@ -101,6 +101,18 @@ elif option == "📊 A/B Test & Data Quality Checker":
                     st.success("✅ Random assignment looks fine.")
                 else:
                     st.warning("⚠️ Possible sample ratio mismatch detected!")
+                st.markdown("#### SRM Visualization")
+                import seaborn as sns
+                import matplotlib.pyplot as plt
+                group_counts = df["group"].value_counts().sort_index()
+                fig, ax = plt.subplots()
+                sns.barplot(x=group_counts.index, y=group_counts.values, ax=ax, palette="pastel")
+                ax.axhline(df.shape[0]/2, ls="--", color="gray", label="Expected")
+                ax.set_ylabel("User Count")
+                ax.set_title("Sample Ratio Mismatch Check")
+                ax.legend()
+                st.pyplot(fig)
+
 
 
                 st.markdown("### Normality Check")
@@ -110,6 +122,17 @@ elif option == "📊 A/B Test & Data Quality Checker":
                     st.warning("⚠️ One or both groups are not normally distributed. Will use non-parametric test.")
                 else:
                     st.success("✅ Both groups appear normally distributed.")
+                st.markdown("#### Normality Visualization")
+                group_a = df[df["group"] == "A"]["converted"]
+                group_b = df[df["group"] == "B"]["converted"]
+                fig2, ax2 = plt.subplots()
+                sns.histplot(group_a, kde=True, label="Group A", ax=ax2, bins=5)
+                sns.histplot(group_b, kde=True, label="Group B", ax=ax2, bins=5)
+                ax2.set_title("Conversion Distribution by Group")
+                ax2.set_xlabel("Converted")
+                ax2.legend()
+                st.pyplot(fig2)
+
 
                 st.markdown("### A/B Test Result")
                 test_name, stat, p_val = run_statistical_test(df, alternative=alt)
