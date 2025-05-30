@@ -69,29 +69,32 @@ elif option == "📊 A/B Test & Data Quality Checker":
 
                 # Proceed with sample ratio check, normality, and A/B test
                 df = df.rename(columns={"variant": "group", "metric": "converted"})  # reuse existing functions
+                
                 st.markdown("### Sample Ratio Mismatch (SRM) Check")
 
-with st.expander("📘 What is SRM and Why Does It Matter?"):
-        st.markdown("""
-        **Sample Ratio Mismatch (SRM)** occurs when the actual split between control and treatment groups
-        is significantly different from the expected ratio (usually 50/50).
+                with st.expander("📘 What is SRM and Why Does It Matter?"):
+                    st.markdown("""
+                    **Sample Ratio Mismatch (SRM)** occurs when the actual split between control and treatment groups
+                    is significantly different from the expected ratio (usually 50/50).
 
-        This can indicate issues like:
-        - Improper randomization
-        - Data corruption
-        - Tracking bugs or dropped events
+                    This can indicate issues like:
+                    - Improper randomization
+                    - Data corruption
+                    - Tracking bugs or dropped events
 
-        We use the **Chi-Square Test** to compare observed group sizes to expected group sizes.
+                    We use the **Chi-Square Test** to compare observed group sizes to expected group sizes.
 
-        If SRM exists, any statistical conclusions drawn from the experiment could be invalid because
-        the assignment is not truly random and unbiased.
-        """)
+                    If SRM exists, any statistical conclusions drawn from the experiment could be invalid because
+                    the assignment is not truly random and unbiased.
+                    """)
+
                 chi2_stat, p_srm = check_srm(df)
                 st.write(f"Chi2 Statistic: {chi2_stat:.2f}, p-value: {p_srm:.4f}")
                 if p_srm >= 0.05:
                     st.success("✅ Random assignment looks fine.")
                 else:
                     st.warning("⚠️ Possible sample ratio mismatch detected!")
+
 
                 st.markdown("### Normality Check")
                 p_norm_a, p_norm_b = check_normality(df)
