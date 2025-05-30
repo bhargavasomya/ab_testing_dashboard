@@ -71,7 +71,7 @@ elif option == "📊 A/B Test & Data Quality Checker":
                 df = df.rename(columns={"variant": "group", "metric": "converted"})  # reuse existing functions
                 st.markdown("### Sample Ratio Mismatch (SRM) Check")
 
-    with st.expander("📘 What is SRM and Why Does It Matter?"):
+with st.expander("📘 What is SRM and Why Does It Matter?"):
         st.markdown("""
         **Sample Ratio Mismatch (SRM)** occurs when the actual split between control and treatment groups
         is significantly different from the expected ratio (usually 50/50).
