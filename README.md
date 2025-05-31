@@ -1,6 +1,5 @@
-# 🧪 A/B Testing Playground
+# 🧪 [A/B Testing Playground](https://abtestingdashboard.streamlit.app/)
 
-This Streamlit app helps you:
 
 - Calculate sample size using power analysis
 - Upload A/B test data and check data quality
