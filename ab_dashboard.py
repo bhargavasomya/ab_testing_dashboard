@@ -20,6 +20,11 @@ if uploaded_file:
 elif use_sample:
     df = pd.read_csv("sample_data.csv")
 
+if use_sample:
+    st.markdown("### 👁️ Sample Dataset Preview")
+    st.dataframe(df.head())
+
+
 # --- Functions ---
 
 def power_analysis():
@@ -45,12 +50,13 @@ def check_srm(df):
     total = sum(obs)
     expected = [total / len(obs)] * len(obs)
     stat, p = chi2_contingency([obs, expected])[:2]
-    st.write("Observed Counts:", dict(counts))
-    st.metric("p-value", f"{p:.4f}")
+    st.write("Observed Counts:", {k: int(v) for k, v in counts.items()})
+    st.metric("Chi-square test p-value", f"{p:.4f}")
     if p < 0.05:
         st.warning("⚠️ Possible SRM detected!")
     else:
         st.success("✅ No SRM detected.")
+    st.bar_chart(counts)
 
     with st.expander("📘 What is SRM and Why Does It Matter?"):
         st.markdown("SRM occurs when your variant group sizes are imbalanced despite randomization. This can bias your results.")
@@ -61,10 +67,12 @@ def check_normality(df):
     for v in variants:
         p_val = shapiro(df[df["variant"] == v]["metric"])[1]
         st.write(f"Variant {v} Shapiro-Wilk p-value:", p_val)
+        st.hist(df[df["variant"] == v]["metric"], bins=10, alpha=0.5, label=v)
         if p_val < 0.05:
             st.warning(f"⚠️ Variant {v} data may not be normally distributed.")
         else:
             st.success(f"✅ Variant {v} passes normality test.")
+    st.pyplot(plt.gcf())
 
 def run_ab_test(df):
     st.subheader("📈 Run A/B Test")
@@ -121,8 +129,7 @@ def apply_fdr_correction(pvals_dict):
     df_p["significant"] = df_p["adj_p"] < 0.05
     st.write(df_p)
 
-def design_simulator():
-    st.subheader("🧪 Experiment Design Simulator")
+# Design Simulator removed
     base = st.slider("Baseline Rate", 0.01, 0.3, 0.1)
     mde = st.slider("Minimum Detectable Effect", 0.005, 0.1, 0.02)
     power = st.slider("Power", 0.5, 0.99, 0.8)
@@ -151,8 +158,7 @@ tab = st.sidebar.radio("Choose Tool", [
     "Run Uplift Modeling",
     "Pre/Post Trends",
     "Multiple Testing Correction",
-    "Design Simulator",
-    "Education"
+        "Education"
 ])
 
 # --- Run Modules ---
@@ -181,7 +187,5 @@ elif tab == "Pre/Post Trends":
         st.warning("Please upload data with a 'date' column.")
 elif tab == "Multiple Testing Correction":
     apply_fdr_correction({"Metric A": 0.03, "Metric B": 0.04, "Metric C": 0.06})
-elif tab == "Design Simulator":
-    design_simulator()
 elif tab == "Education":
     educational_toggle()
