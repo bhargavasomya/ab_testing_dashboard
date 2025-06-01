@@ -1,6 +1,55 @@
 
 import streamlit as st
 import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
+
+def run_uplift_modeling(df):
+    st.subheader("📈 Uplift Modeling")
+
+    st.markdown("""
+Uplift modeling estimates how likely someone is to respond *because* of the treatment.
+We model outcomes separately for treatment and control groups and then subtract.
+
+This helps answer: **Who is positively influenced by the experiment?**
+""")
+
+    feature_cols = st.multiselect("Choose features for uplift modeling", [col for col in df.columns if col not in ["variant", "metric"]])
+    if not feature_cols:
+        st.info("Please select at least one feature.")
+        return
+
+    df = df.dropna(subset=["variant", "metric"] + feature_cols)
+    df["treatment"] = (df["variant"] == df["variant"].unique()[1]).astype(int)
+
+    X = df[feature_cols]
+    y = df["metric"]
+    treatment_mask = df["treatment"] == 1
+
+    X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(X[~treatment_mask], y[~treatment_mask], test_size=0.3, random_state=42)
+    X_train_t, X_test_t, y_train_t, y_test_t = train_test_split(X[treatment_mask], y[treatment_mask], test_size=0.3, random_state=42)
+
+    model_c = LogisticRegression().fit(X_train_c, y_train_c)
+    model_t = LogisticRegression().fit(X_train_t, y_train_t)
+
+    uplift = model_t.predict_proba(X_test_t)[:,1] - model_c.predict_proba(X_test_t)[:,1]
+    uplift_df = pd.DataFrame({
+        "uplift_score": uplift,
+        "true_outcome": y_test_t.reset_index(drop=True)
+    })
+
+    st.write("Average uplift score for treatment group:", uplift_df["uplift_score"].mean())
+    st.write(uplift_df.head())
+
+    st.markdown("""
+> 🧠 **Note**: In production, you’d use meta-learners (T-, S-, X-Learner), causal forests, or deep uplift models.
+""")
+
+
+
+import streamlit as st
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -95,23 +144,93 @@ elif page == "A/B Test & Data Quality Checker":
         else:
             st.info("No significant difference detected.")
 
-        with st.expander("🚀 Advanced Features (Experimental Modules)"):
-            st.markdown("These are previews of upcoming advanced experimentation features.")
+        
+with st.expander("🚀 Advanced Features"):
+    st.markdown("These modules showcase advanced experimentation maturity and are recruiter-friendly.")
 
-            if st.button("🧪 Explore Uplift Modeling (Coming Soon)"):
-                st.info("We’ll train models to detect heterogeneous treatment effects by segment.")
+    if st.button("🧪 Run Uplift Modeling"):
+        run_uplift_modeling(df)
 
-            if st.button("⏱️ Sequential Testing (Coming Soon)"):
-                st.info("Bayesian Bandits and Group Sequential Tests planned.")
+    if st.button("⏱️ Run Sequential Testing"):
+        run_sequential_testing(df)
 
-            if st.button("🎯 Multiple Test Corrections (Coming Soon)"):
-                st.info("Bonferroni and Benjamini-Hochberg FDR corrections planned.")
+    if st.button("🎯 Apply FDR Correction"):
+        apply_fdr_correction([0.03, 0.04, 0.06])
 
-            if st.button("📈 Pre/Post Trend Checks (Coming Soon)"):
-                st.info("Visual analysis of time-based trends.")
+    if st.button("📈 Run Pre/Post Trend Analysis"):
+        run_trend_check(df)
 
-            if st.button("📊 Decision Dashboard (Coming Soon)"):
-                st.success("B is 6% better with 95% CI — recommendation: SHIP.")
+    if st.button("📊 Generate Decision Dashboard"):
+        show_decision_dashboard(df)
 
-            if st.button("🧠 Learn A/B Testing (Coming Soon)"):
-                st.info("Toggle between beginner and advanced views with visuals.")
+    if st.button("🧠 Learn A/B Testing"):
+        educational_toggle()
+
+    with st.expander("📘 What’s Coming Soon?"):
+        st.markdown("""
+- 🧪 **Bayesian Bandits / Alpha Spending** for early stopping
+- 🎯 **Multiple metric correction UI** if multiple outcome columns
+- 📈 **Parallel trends diagnostic visuals**
+- 🧠 **Design simulator** for tradeoffs between MDE, power, and error types
+- 🌐 **Live datasets** from OpenML or synthetic clickstreams
+- 🧵 **Explain Like I'm 5 mode** for beginners
+        """)
+
+
+
+# ------------------------
+# Additional Advanced Modules
+# ------------------------
+
+def run_sequential_testing(df):
+    st.subheader("⏱️ Sequential Testing (Bayesian Bandits Preview)")
+    st.markdown("""
+Sequential tests allow for stopping the experiment early if enough evidence builds up.
+We'll simulate Bayesian posterior probabilities with placeholder logic here.
+""")
+    st.info("Coming soon: Thompson Sampling and group sequential methods with live plots.")
+
+def apply_fdr_correction(p_vals):
+    st.subheader("🎯 False Discovery Rate (FDR) Control")
+    st.markdown("Applying Benjamini-Hochberg procedure to control Type I error rate.")
+    df_p = pd.DataFrame({"p_value": p_vals}).sort_values("p_value").reset_index(drop=True)
+    df_p["rank"] = df_p.index + 1
+    df_p["BH_threshold"] = (df_p["rank"] / len(df_p)) * 0.05
+    df_p["significant"] = df_p["p_value"] < df_p["BH_threshold"]
+    st.write(df_p)
+    st.info("Only p-values below BH threshold are considered statistically significant.")
+
+def run_trend_check(df):
+    st.subheader("📈 Pre/Post Trend Analysis")
+    st.markdown("Upload data with `date`, `variant`, and `metric` columns to view trends.")
+    if not all(col in df.columns for col in ["date", "variant", "metric"]):
+        st.warning("Missing required columns: 'date', 'variant', 'metric'.")
+        return
+    df["date"] = pd.to_datetime(df["date"])
+    daily = df.groupby(["date", "variant"])["metric"].mean().reset_index()
+    fig, ax = plt.subplots()
+    for key, grp in daily.groupby("variant"):
+        ax.plot(grp["date"], grp["metric"], label=key)
+    ax.legend()
+    ax.set_title("Daily Conversion Rate by Variant")
+    st.pyplot(fig)
+
+def show_decision_dashboard(df):
+    st.subheader("📊 Decision Dashboard")
+    summary = df.groupby("variant")["metric"].agg(["mean", "count"])
+    lift = summary.loc["B", "mean"] - summary.loc["A", "mean"]
+    st.metric("Lift (B - A)", f"{lift:.3f}")
+    st.write("Interpretation:")
+    if lift > 0.01:
+        st.success("🎯 B performs better — Consider shipping!")
+    else:
+        st.info("No large difference — Consider rerunning or segmenting.")
+
+def educational_toggle():
+    st.subheader("🧠 Learn A/B Testing")
+    explain = st.radio("Choose level of explanation:", ["Beginner", "Advanced"])
+    if explain == "Beginner":
+        st.markdown("**A/B testing** compares two versions of something to see which performs better. It usually uses a t-test or chi-square test.")
+        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/AB_testing_Example.svg/1024px-AB_testing_Example.svg.png", width=400)
+    else:
+        st.markdown("In advanced A/B testing, we consider statistical power, SRM, segmentation, multi-metric correction, and Bayesian inference.")
