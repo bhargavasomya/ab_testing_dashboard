@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 
-def run_uplift_modeling(df):
+def run_uplift_modeling(df) if "df" in locals() else st.warning("Please upload a dataset before running uplift modeling."):
     st.subheader("📈 Uplift Modeling")
 
     st.markdown("""
@@ -149,7 +149,7 @@ with st.expander("🚀 Advanced Features"):
     st.markdown("These modules showcase advanced experimentation maturity and are recruiter-friendly.")
 
     if st.button("🧪 Run Uplift Modeling"):
-        run_uplift_modeling(df)
+        run_uplift_modeling(df) if "df" in locals() else st.warning("Please upload a dataset before running uplift modeling.")
 
     if st.button("⏱️ Run Sequential Testing"):
         run_sequential_testing(df)
