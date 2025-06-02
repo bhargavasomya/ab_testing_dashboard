@@ -1,15 +1,16 @@
+from sklearn.linear_model import LogisticRegression
+from scipy.stats import chisquare
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency, shapiro, ttest_ind
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.base import clone
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 import seaborn as sns
-from scipy.stats import chisquare
 
 st.set_page_config(layout="wide", page_title="A/B Testing & Uplift Modeling Dashboard")
 
@@ -31,6 +32,7 @@ def sample_size_calculator():
     analysis = NormalIndPower()
     sample_size = analysis.solve_power(effect_size=effect_size, power=power/100, alpha=alpha/100, ratio=1)
     st.success("📊 You need approximately {:,} users per group.".format(int(sample_size)))
+:,} users per group.")
 
 def check_srm(df):
     st.subheader("🔍 Sample Ratio Mismatch (SRM) Check")
@@ -88,10 +90,10 @@ def run_uplift_modeling(df):
 
     df["treatment"] = (df["variant"] == "B").astype(int)
     X = pd.get_dummies(df[features], drop_first=True)
-    y = df["metric"]
+    y = (df["metric"] > 0).astype(int)  # Binarized for classification uplift
 
     if model_choice == "T-Learner (Two Random Forests)":
-        model_t = RandomForestRegressor().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
+        model_t = RandomForestClassifier().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
         model_c = clone(model_t).fit(X[df["treatment"] == 0], y[df["treatment"] == 0])
         uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
     else:
@@ -99,7 +101,7 @@ def run_uplift_modeling(df):
         df_model = pd.get_dummies(df_model, drop_first=True)
         df_model["interaction"] = df_model["treatment"] * df_model[df_model.columns[0]]
         X_model = df_model.drop(columns=["treatment"])
-        model = RandomForestRegressor().fit(X_model, y)
+        model = RandomForestClassifier().fit(X_model, y)
         uplift = model.predict_proba(X_model)[:, 1] - y.mean()
 
     df["uplift_score"] = uplift
@@ -301,7 +303,7 @@ def run_uplift_modeling(df):
 
     df["treatment"] = df["variant"].apply(lambda x: 1 if x == "B" else 0)
     X = pd.get_dummies(df[["gender", "age", "income"]], drop_first=True)
-    y = df["metric"]
+    y = (df["metric"] > 0).astype(int)  # Binarized for classification uplift
 
     if model_type == "T-Learner":
         model_t = RandomForestClassifier().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
