@@ -58,6 +58,20 @@ def check_srm(df):
         st.success("✅ No SRM detected.")
     st.bar_chart(counts)
 
+    with st.expander("📘 Educational: What is SRM and Why It Matters"):
+        st.markdown("""
+        **Sample Ratio Mismatch (SRM)** occurs when the observed number of users in control and treatment groups
+        significantly deviates from the expected ratio. This can happen due to bugs, tracking issues, or biased assignment logic.
+
+        **Why It Matters:**
+        - SRM violates the assumption of random assignment.
+        - It can lead to invalid statistical inferences.
+
+        **Test Used:** We use a **Chi-square goodness-of-fit test** to compare observed group sizes against expected ones.
+        A p-value < 0.05 suggests the assignment might not be random.
+        """)
+
+
     with st.expander("📘 What is SRM and Why Does It Matter?"):
         st.markdown("SRM occurs when your variant group sizes are imbalanced despite randomization. This can bias your results.")
 
@@ -67,12 +81,29 @@ def check_normality(df):
     for v in variants:
         p_val = shapiro(df[df["variant"] == v]["metric"])[1]
         st.write(f"Variant {v} Shapiro-Wilk p-value:", p_val)
-        st.hist(df[df["variant"] == v]["metric"], bins=10, alpha=0.5, label=v)
+        plt.hist(df[df["variant"] == v]["metric"], bins=10, alpha=0.5, label=str(v))
         if p_val < 0.05:
             st.warning(f"⚠️ Variant {v} data may not be normally distributed.")
         else:
             st.success(f"✅ Variant {v} passes normality test.")
     st.pyplot(plt.gcf())
+
+    with st.expander("📘 Educational: Normality Check"):
+        st.markdown("""
+        **Normality tests** check whether your metric is approximately normally distributed in each variant group.
+
+        **Why It Matters:**
+        - Many statistical tests (e.g., t-tests) assume normal distribution of the data.
+        - Violations can lead to inaccurate p-values or reduced test power.
+
+        **Test Used:** We use the **Shapiro-Wilk test** to assess normality.
+        - A p-value < 0.05 means the data is likely **not** normally distributed.
+
+        **Alternative Tests:** If normality is violated, consider:
+        - Non-parametric tests like Mann-Whitney U
+        - Bootstrap methods
+        """)
+
 
 def run_ab_test(df):
     st.subheader("📈 Run A/B Test")
@@ -97,6 +128,10 @@ def run_uplift_modeling(df):
         return
     df["treatment"] = (df["variant"] == df["variant"].unique()[1]).astype(int)
     X = df[features]
+
+    # Encode categorical features
+    X = pd.get_dummies(X, drop_first=True)
+
     y = df["metric"]
     model_t = RandomForestClassifier().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
     model_c = clone(model_t).fit(X[df["treatment"] == 0], y[df["treatment"] == 0])
@@ -187,5 +222,62 @@ elif tab == "Pre/Post Trends":
         st.warning("Please upload data with a 'date' column.")
 elif tab == "Multiple Testing Correction":
     apply_fdr_correction({"Metric A": 0.03, "Metric B": 0.04, "Metric C": 0.06})
+
 elif tab == "Education":
-    educational_toggle()
+    st.header("📚 A/B Testing Tutorial")
+    st.markdown("""
+    ## 🧪 What is A/B Testing?
+
+    A/B testing is an experiment comparing two or more variants (A, B, etc.) to determine which one performs better for a given metric.
+
+    ---
+
+    ## 🔍 Sample Ratio Mismatch (SRM)
+
+    SRM occurs when the number of users in each group is not proportionate as expected under random assignment. This could signal a bug in targeting or assignment logic.
+    We detect SRM using a **Chi-square goodness-of-fit test**.
+
+    ---
+
+    ## 📊 Normality Checks
+
+    Statistical tests like t-tests assume normal distribution of the metric. We check this using the **Shapiro-Wilk test**. If the distribution fails this check, we advise:
+    - Using non-parametric tests (e.g., Mann-Whitney U)
+    - Bootstrapping
+
+    ---
+
+    ## 🎯 A/B Testing
+
+    We run standard t-tests (one-sided or two-sided) to compare the means of treatment and control groups.
+
+    ---
+
+    ## 📈 Uplift Modeling
+
+    Uplift modeling estimates the causal effect of an intervention per individual. We use a **T-Learner**:
+    - Train one model on the treatment group
+    - Train another on the control group
+    - Subtract their predictions to compute uplift
+
+    ---
+
+    ## 🧠 Multiple Testing Correction
+
+    If testing multiple metrics, we apply:
+    - **Bonferroni**: very strict
+    - **Benjamini-Hochberg**: controls the false discovery rate
+
+    ---
+
+    ## 📉 Pre/Post Trend Analysis
+
+    When time-series data is present, we recommend checking parallel pre-trends to ensure experimental validity. Drift post-intervention is also visualized.
+
+    ---
+
+    ## 🎓 "Explain Like I'm 5" Mode
+
+    We've added toggles throughout the tool that simplify statistical concepts for new learners!
+    """)
+
