@@ -32,6 +32,7 @@ def sample_size_calculator():
     analysis = NormalIndPower()
     sample_size = analysis.solve_power(effect_size=effect_size, power=power/100, alpha=alpha/100, ratio=1)
     st.success("📊 You need approximately {:,} users per group.".format(int(sample_size)))
+:,} users per group.")
 
 def check_srm(df):
     st.subheader("🔍 Sample Ratio Mismatch (SRM) Check")
@@ -94,7 +95,11 @@ def run_uplift_modeling(df):
     if model_choice == "T-Learner (Two Random Forests)":
         model_t = RandomForestClassifier().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
         model_c = clone(model_t).fit(X[df["treatment"] == 0], y[df["treatment"] == 0])
-        uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
+        if model_t.predict_proba(X).shape[1] < 2 or model_c.predict_proba(X).shape[1] < 2:
+        st.warning("⚠️ Uplift modeling could not be completed due to insufficient class variation in one of the groups.")
+        return
+
+    uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
     else:
         df_model = df[features + ["treatment"]].copy()
         df_model = pd.get_dummies(df_model, drop_first=True)
@@ -307,7 +312,11 @@ def run_uplift_modeling(df):
     if model_type == "T-Learner":
         model_t = RandomForestClassifier().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
         model_c = RandomForestClassifier().fit(X[df["treatment"] == 0], y[df["treatment"] == 0])
-        uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
+        if model_t.predict_proba(X).shape[1] < 2 or model_c.predict_proba(X).shape[1] < 2:
+        st.warning("⚠️ Uplift modeling could not be completed due to insufficient class variation in one of the groups.")
+        return
+
+    uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
     else:
         model_lr = LogisticRegression().fit(pd.concat([X, df["treatment"]], axis=1), y)
         uplift = model_lr.predict_proba(pd.concat([X, df["treatment"]], axis=1))[:, 1]
