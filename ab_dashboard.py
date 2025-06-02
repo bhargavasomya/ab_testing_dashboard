@@ -164,7 +164,16 @@ def apply_fdr_correction(pvals_dict):
     df_p["significant"] = df_p["adj_p"] < 0.05
     st.write(df_p)
 
-
+# Design Simulator removed
+    base = st.slider("Baseline Rate", 0.01, 0.3, 0.1)
+    mde = st.slider("Minimum Detectable Effect", 0.005, 0.1, 0.02)
+    power = st.slider("Power", 0.5, 0.99, 0.8)
+    alpha = st.slider("Alpha", 0.01, 0.1, 0.05)
+    z_alpha = norm.ppf(1 - alpha / 2)
+    z_beta = norm.ppf(power)
+    pooled = np.sqrt(2 * base * (1 - base))
+    sample = ((z_alpha + z_beta) * pooled / mde) ** 2
+    st.metric("Sample Size per Group", f"{int(np.ceil(sample))}")
 
 def educational_toggle():
     st.subheader("📘 Explain Mode")
