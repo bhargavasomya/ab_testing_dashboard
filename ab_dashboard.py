@@ -45,9 +45,7 @@ elif page == "SRM & Normality":
     expected = [len(df)/len(variant_counts)] * len(variant_counts)
     chi2, p_srm = chisquare(f_obs=observed, f_exp=expected)
     st.subheader("Sample Ratio Mismatch (SRM)")
-    st.write(f"Observed Counts:
-
-{variant_counts.to_dict()}")
+    st.write(f"Observed Counts:\n{observed_counts}")
     st.write(f"p-value: **{p_srm:.4f}**")
     if p_srm < 0.05:
         st.warning("⚠️ Possible Sample Ratio Mismatch!")
