@@ -68,46 +68,59 @@ def run_ab_test(df, one_sided=False):
     st.metric("p-value", f"{p:.4f}")
 
 def run_uplift_modeling(df):
-    st.subheader("🎯 Uplift Modeling")
-    features = st.multiselect("Select Features", options=[col for col in df.columns if col not in ["variant", "metric"]])
-    if not features:
-        st.warning("Please select at least one feature.")
-        return
+    st.markdown("## 🎯 Uplift Modeling")
+    model_type = st.radio("Choose uplift model", ["T-Learner", "Logistic Regression"])
 
-    model_choice = st.radio("Choose Uplift Model", ["T-Learner (Two Random Forests)", "Single Logistic Regression with Treatment Interaction"])
-    with st.expander("📘 Explanation: Uplift Modeling Approaches"):
-        st.markdown("""
-        **T-Learner** trains two separate models:
-        - One on treatment group
-        - One on control group
-        Then subtracts predicted probabilities to estimate individual uplift.
-
-        **Logistic Regression** uses a single model with interaction between features and treatment indicator.
-
-        T-Learner can capture non-linear patterns but may overfit with small sample sizes. Logistic Regression is simpler and interpretable.
-        """)
-
-    df["treatment"] = (df["variant"] == "B").astype(int)
-    X = pd.get_dummies(df[features], drop_first=True)
+    df["treatment"] = df["variant"].apply(lambda x: 1 if x == "B" else 0)
+    X = pd.get_dummies(df[["gender", "age", "income"]], drop_first=True)
     y = (df["metric"] > 0).astype(int)  # Binarized for classification uplift
 
-    if model_choice == "T-Learner (Two Random Forests)":
+    if model_type == "T-Learner":
         model_t = RandomForestClassifier().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
-        model_c = clone(model_t).fit(X[df["treatment"] == 0], y[df["treatment"] == 0])
-        if model_t.predict_proba(X).shape[1] < 2 or model_c.predict_proba(X).shape[1] < 2:
-        st.warning("⚠️ Uplift modeling could not be completed due to insufficient class variation in one of the groups.")
-        return
-    uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
+        model_c = RandomForestClassifier().fit(X[df["treatment"] == 0], y[df["treatment"] == 0])
+        
     else:
-        df_model = df[features + ["treatment"]].copy()
-        df_model = pd.get_dummies(df_model, drop_first=True)
-        df_model["interaction"] = df_model["treatment"] * df_model[df_model.columns[0]]
-        X_model = df_model.drop(columns=["treatment"])
-        model = RandomForestClassifier().fit(X_model, y)
-        uplift = model.predict_proba(X_model)[:, 1] - y.mean()
+        model_lr = LogisticRegression().fit(pd.concat([X, df["treatment"]], axis=1), y)
+        uplift = model_lr.predict_proba(pd.concat([X, df["treatment"]], axis=1))[:, 1]
 
-    df["uplift_score"] = uplift
-    st.write(df[["variant"] + features + ["uplift_score"]].head())
+    df["uplift"] = uplift
+    st.success("Uplift scores calculated.")
+    st.dataframe(df[["gender", "age", "income", "uplift"]].head())
+
+    fig, ax = plt.subplots()
+    df["uplift"].hist(bins=20, ax=ax)
+    ax.set_title("Uplift Score Distribution")
+    st.pyplot(fig)
+
+    with st.expander("📘 What is uplift modeling?"):
+        st.markdown("""
+        Uplift modeling estimates the difference in outcome caused **by the treatment** for each individual.
+        This helps identify **who benefits the most** from your variant, allowing personalized targeting.
+        - **T-Learner** fits two separate models for treatment and control groups.
+        - **Logistic Regression** estimates treatment impact directly as a covariate.
+        """)
+
+
+if "ab_data" not in st.session_state:
+    st.warning("📂 Please upload your data or load the sample dataset to continue.")
+else:
+    df = st.session_state["ab_data"]
+    st.subheader("📋 Preview of Your Dataset")
+    st.dataframe(df.head())
+
+    st.markdown("---")
+    st.header("🔍 Step 1: SRM & Normality Checks")
+    check_srm_and_normality(df)
+
+    st.markdown("---")
+    st.header("📊 Step 2: A/B Testing")
+    one_sided = st.radio("Use one-sided test?", [True, False])
+    run_ab_test(df, one_sided)
+
+    st.markdown("---")
+    st.header("🎯 Step 3: Uplift Modeling")
+    run_uplift_modeling(df)
+
 
 def multiple_testing_correction():
     st.subheader("🧪 Multiple Testing Correction")
