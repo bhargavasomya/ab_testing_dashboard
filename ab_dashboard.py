@@ -30,6 +30,7 @@ def sample_size_calculator():
     analysis = NormalIndPower()
     sample_size = analysis.solve_power(effect_size=effect_size, power=power/100, alpha=alpha/100, ratio=1)
     st.success("📊 You need approximately {:,} users per group.".format(int(sample_size)))
+:,} users per group.")
 
 def check_srm(df):
     st.subheader("🔍 Sample Ratio Mismatch (SRM) Check")
@@ -228,3 +229,101 @@ elif tab == "Multiple Correction":
     multiple_testing_correction()
 elif tab == "Education":
     education_page()
+
+
+def check_srm_and_normality(df):
+    st.subheader("📊 SRM and Normality Checks")
+
+    # SRM - Sample Ratio Mismatch
+    st.markdown("#### 🧪 Sample Ratio Mismatch")
+    counts = df["variant"].value_counts().to_dict()
+    expected = [len(df) / 2, len(df) / 2]
+    observed = [counts.get("A", 0), counts.get("B", 0)]
+
+    chi2, p_srm = chisquare(f_obs=observed, f_exp=expected)
+    st.metric("SRM p-value", f"{p_srm:.4f}")
+    st.bar_chart(pd.DataFrame({"Variant": ["A", "B"], "Count": observed}).set_index("Variant"))
+
+    with st.expander("📘 What does this mean?"):
+        st.markdown("""
+        A low p-value (< 0.05) suggests that the observed group sizes differ significantly from expectation,
+        indicating a possible **Sample Ratio Mismatch (SRM)**.
+        SRM could be due to tracking bugs or poor randomization and may invalidate your experiment results.
+        """)
+
+    # Normality Test (Shapiro-Wilk)
+    st.markdown("#### 📈 Normality Test")
+    for v in df["variant"].unique():
+        stat, p_norm = shapiro(df[df["variant"] == v]["metric"])
+        st.metric(f"Normality p-value for {v}", f"{p_norm:.4f}")
+        fig, ax = plt.subplots()
+        ax.hist(df[df["variant"] == v]["metric"], bins=10, alpha=0.7)
+        ax.set_title(f"Histogram - {v}")
+        st.pyplot(fig)
+
+    with st.expander("📘 Why check for normality?"):
+        st.markdown("""
+        Normality tests help determine whether your metric follows a Gaussian distribution.
+        If it does **not**, you may want to avoid using parametric tests like the t-test.
+        """)
+
+def run_ab_test(df, one_sided):
+    st.markdown("## 🧪 A/B Test Results")
+    group_a = df[df["variant"] == "A"]["metric"]
+    group_b = df[df["variant"] == "B"]["metric"]
+    t_stat, p_val = ttest_ind(group_a, group_b, equal_var=False)
+    p_val = p_val / 2 if one_sided else p_val
+    st.metric("p-value", f"{p_val:.4f}")
+
+    fig, ax = plt.subplots()
+    ax.bar(["A", "B"], [group_a.mean(), group_b.mean()], yerr=[group_a.std(), group_b.std()], capsize=5)
+    st.pyplot(fig)
+
+    with st.expander("📘 How to interpret the result?"):
+        st.markdown("""
+        A low p-value (< 0.05) means there's strong evidence that the observed difference between variants is statistically significant.
+        Use one-sided tests when you only care about improvement in one direction.
+        """)
+
+    st.markdown("### 📊 A/B Testing by Cohorts")
+    cohort_feature = st.selectbox("Segment by", ["gender", "age", "income"])
+    for value in df[cohort_feature].unique():
+        seg = df[df[cohort_feature] == value]
+        a = seg[seg["variant"] == "A"]["metric"]
+        b = seg[seg["variant"] == "B"]["metric"]
+        if len(a) > 0 and len(b) > 0:
+            stat, p = ttest_ind(a, b, equal_var=False)
+            st.markdown(f"**{cohort_feature} = {value}** — p-value: `{p:.4f}`")
+
+def run_uplift_modeling(df):
+    st.markdown("## 🎯 Uplift Modeling")
+    model_type = st.radio("Choose uplift model", ["T-Learner", "Logistic Regression"])
+
+    df["treatment"] = df["variant"].apply(lambda x: 1 if x == "B" else 0)
+    X = pd.get_dummies(df[["gender", "age", "income"]], drop_first=True)
+    y = df["metric"]
+
+    if model_type == "T-Learner":
+        model_t = RandomForestClassifier().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
+        model_c = RandomForestClassifier().fit(X[df["treatment"] == 0], y[df["treatment"] == 0])
+        uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
+    else:
+        model_lr = LogisticRegression().fit(pd.concat([X, df["treatment"]], axis=1), y)
+        uplift = model_lr.predict_proba(pd.concat([X, df["treatment"]], axis=1))[:, 1]
+
+    df["uplift"] = uplift
+    st.success("Uplift scores calculated.")
+    st.dataframe(df[["gender", "age", "income", "uplift"]].head())
+
+    fig, ax = plt.subplots()
+    df["uplift"].hist(bins=20, ax=ax)
+    ax.set_title("Uplift Score Distribution")
+    st.pyplot(fig)
+
+    with st.expander("📘 What is uplift modeling?"):
+        st.markdown("""
+        Uplift modeling estimates the difference in outcome caused **by the treatment** for each individual.
+        This helps identify **who benefits the most** from your variant, allowing personalized targeting.
+        - **T-Learner** fits two separate models for treatment and control groups.
+        - **Logistic Regression** estimates treatment impact directly as a covariate.
+        """)
