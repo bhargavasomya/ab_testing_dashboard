@@ -144,11 +144,21 @@ def education_page():
     """)
 
 # Main Navigation
-tabs = ["Sample Size", "A/B Test & Uplift", "Multiple Correction", "Education"]
+tabs = ["Sample Size", "SRM & Normality Checks", "A/B Test & Uplift", "Multiple Correction", "Education"]
 tab = st.sidebar.radio("Choose Section", tabs)
 
 if tab == "Sample Size":
     sample_size_calculator()
+
+elif tab == "SRM & Normality Checks":
+    st.title("🔍 SRM and Normality Checks")
+    uploaded = st.file_uploader("Upload CSV with 'variant' and 'metric' columns", type="csv", key="srm_upload")
+    if uploaded:
+        df = pd.read_csv(uploaded)
+        st.dataframe(df.head())
+        check_srm(df)
+        check_normality(df)
+
 elif tab == "A/B Test & Uplift":
     st.title("📊 Upload Your A/B Testing Data")
     uploaded = st.file_uploader("Upload CSV with columns 'variant', 'metric', and optional features", type="csv")
