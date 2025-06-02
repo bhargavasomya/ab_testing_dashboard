@@ -1,8 +1,9 @@
 
 import streamlit as st
 import pandas as pd
+import numpy as np
+from scipy.stats import chi2_contingency, mannwhitneyu, ttest_ind, shapiro, chisquare
 from statsmodels.stats.power import NormalIndPower
-st.set_page_config(page_title="A/B Testing Pro", layout="wide")
 from statsmodels.stats.multitest import multipletests
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -25,6 +26,7 @@ else:
     else:
         df = None
 
+st.set_page_config(page_title="A/B Testing Pro", layout="wide")
 st.sidebar.title("📊 Navigation")
 page = st.sidebar.radio("Go to", ["Sample Size", "SRM & Normality", "A/B Testing", "Uplift Modeling", "Trend Analysis", "Tutorials"])
 
@@ -58,7 +60,9 @@ elif page == "SRM & Normality":
     expected = [len(df)/len(variant_counts)] * len(variant_counts)
     chi2, p_srm = chisquare(f_obs=observed, f_exp=expected)
     st.subheader("Sample Ratio Mismatch (SRM)")
-    st.write(f"Observed Counts:\n{observed_counts}")
+    st.write(f"Observed Counts:
+
+{variant_counts.to_dict()}")
     st.write(f"p-value: **{p_srm:.4f}**")
     if p_srm < 0.05:
         st.warning("⚠️ Possible Sample Ratio Mismatch!")
