@@ -32,7 +32,6 @@ def sample_size_calculator():
     analysis = NormalIndPower()
     sample_size = analysis.solve_power(effect_size=effect_size, power=power/100, alpha=alpha/100, ratio=1)
     st.success("📊 You need approximately {:,} users per group.".format(int(sample_size)))
-:,} users per group.")
 
 def check_srm(df):
     st.subheader("🔍 Sample Ratio Mismatch (SRM) Check")
