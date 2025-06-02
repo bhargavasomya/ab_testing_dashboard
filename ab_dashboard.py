@@ -99,7 +99,7 @@ def run_uplift_modeling(df):
         df_model = pd.get_dummies(df_model, drop_first=True)
         df_model["interaction"] = df_model["treatment"] * df_model[df_model.columns[0]]
         X_model = df_model.drop(columns=["treatment"])
-        model = RandomForestClassifier().fit(X_model, y)
+        model = RandomForestRegressor().fit(X_model, y)
         uplift = model.predict_proba(X_model)[:, 1] - y.mean()
 
     df["uplift_score"] = uplift
