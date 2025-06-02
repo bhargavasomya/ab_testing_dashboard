@@ -30,6 +30,7 @@ def sample_size_calculator():
     analysis = NormalIndPower()
     sample_size = analysis.solve_power(effect_size=effect_size, power=power/100, alpha=alpha/100, ratio=1)
     st.success("📊 You need approximately {:,} users per group.".format(int(sample_size)))
+:,} users per group.")
 
 def check_srm(df):
     st.subheader("🔍 Sample Ratio Mismatch (SRM) Check")
@@ -160,10 +161,15 @@ elif tab == "SRM & Normality Checks":
     st.title("🔍 SRM and Normality Checks")
     uploaded = st.file_uploader("Upload CSV with 'variant' and 'metric' columns", type="csv", key="srm_upload")
     
+    
     st.markdown("### 🚀 Use Built-in Sample Data")
     if st.button("Load Sample Data"):
-        df = pd.read_csv("https://raw.githubusercontent.com/your-repo/sample_ab_data.csv")
-        st.session_state["ab_data"] = df
+        try:
+            df = pd.read_csv("sample_ab_data.csv")
+            st.session_state["ab_data"] = df
+        except FileNotFoundError:
+            st.error("sample_ab_data.csv not found. Please make sure it's in the project root.")
+
 
     if "ab_data" in st.session_state:
         df = st.session_state["ab_data"]
@@ -181,10 +187,15 @@ elif tab == "A/B Test & Uplift":
     uploaded = st.file_uploader("Upload CSV with columns 'variant', 'metric', and optional features", type="csv")
     one_sided = st.checkbox("One-sided Test", value=False)
     
+    
     st.markdown("### 🚀 Use Built-in Sample Data")
     if st.button("Load Sample Data"):
-        df = pd.read_csv("https://raw.githubusercontent.com/your-repo/sample_ab_data.csv")
-        st.session_state["ab_data"] = df
+        try:
+            df = pd.read_csv("sample_ab_data.csv")
+            st.session_state["ab_data"] = df
+        except FileNotFoundError:
+            st.error("sample_ab_data.csv not found. Please make sure it's in the project root.")
+
 
     if "ab_data" in st.session_state:
         df = st.session_state["ab_data"]
