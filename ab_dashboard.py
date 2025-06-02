@@ -1,9 +1,8 @@
 
 import streamlit as st
 import pandas as pd
-import numpy as np
-from scipy.stats import chi2_contingency, mannwhitneyu, ttest_ind, shapiro, chisquare
 from statsmodels.stats.power import NormalIndPower
+st.set_page_config(page_title="A/B Testing Pro", layout="wide")
 from statsmodels.stats.multitest import multipletests
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -26,7 +25,6 @@ else:
     else:
         df = None
 
-st.set_page_config(page_title="A/B Testing Pro", layout="wide")
 st.sidebar.title("📊 Navigation")
 page = st.sidebar.radio("Go to", ["Sample Size", "SRM & Normality", "A/B Testing", "Uplift Modeling", "Trend Analysis", "Tutorials"])
 
