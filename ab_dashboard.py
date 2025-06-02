@@ -9,6 +9,7 @@ from sklearn.base import clone
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 import seaborn as sns
+from scipy.stats import chisquare
 
 st.set_page_config(layout="wide", page_title="A/B Testing & Uplift Modeling Dashboard")
 
