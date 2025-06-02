@@ -30,6 +30,7 @@ def sample_size_calculator():
     analysis = NormalIndPower()
     sample_size = analysis.solve_power(effect_size=effect_size, power=power/100, alpha=alpha/100, ratio=1)
     st.success("📊 You need approximately {:,} users per group.".format(int(sample_size)))
+:,} users per group.")
 
 def check_srm(df):
     st.subheader("🔍 Sample Ratio Mismatch (SRM) Check")
@@ -326,3 +327,24 @@ def run_uplift_modeling(df):
         - **T-Learner** fits two separate models for treatment and control groups.
         - **Logistic Regression** estimates treatment impact directly as a covariate.
         """)
+
+
+if "ab_data" not in st.session_state:
+    st.warning("📂 Please upload your data or load the sample dataset to continue.")
+else:
+    df = st.session_state["ab_data"]
+    st.subheader("📋 Preview of Your Dataset")
+    st.dataframe(df.head())
+
+    st.markdown("---")
+    st.header("🔍 Step 1: SRM & Normality Checks")
+    check_srm_and_normality(df)
+
+    st.markdown("---")
+    st.header("📊 Step 2: A/B Testing")
+    one_sided = st.radio("Use one-sided test?", [True, False])
+    run_ab_test(df, one_sided)
+
+    st.markdown("---")
+    st.header("🎯 Step 3: Uplift Modeling")
+    run_uplift_modeling(df)
