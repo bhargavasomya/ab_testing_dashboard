@@ -12,18 +12,25 @@ import seaborn as sns
 
 st.set_page_config(layout="wide", page_title="A/B Testing & Uplift Modeling Dashboard")
 
+
 def sample_size_calculator():
     st.subheader("📏 Sample Size Calculator")
+    try:
+        from statsmodels.stats.power import NormalIndPower
+    except ModuleNotFoundError:
+        st.error("❌ 'statsmodels' is not installed. Please install it with `pip install statsmodels`.")
+        return
+
     mde = st.number_input("Minimum Detectable Effect (%)", value=5.0)
     baseline = st.number_input("Baseline Conversion Rate (%)", value=10.0)
     power = st.number_input("Power (%)", value=80.0)
     alpha = st.number_input("Significance Level (%)", value=5.0)
 
-    from statsmodels.stats.power import NormalIndPower
     effect_size = abs(mde / 100) / np.sqrt((baseline / 100) * (1 - baseline / 100))
     analysis = NormalIndPower()
     sample_size = analysis.solve_power(effect_size=effect_size, power=power/100, alpha=alpha/100, ratio=1)
     st.success(f"📊 You need approximately {int(sample_size):,} users per group.")
+:,} users per group.")
 
 def check_srm(df):
     st.subheader("🔍 Sample Ratio Mismatch (SRM) Check")
@@ -153,6 +160,17 @@ if tab == "Sample Size":
 elif tab == "SRM & Normality Checks":
     st.title("🔍 SRM and Normality Checks")
     uploaded = st.file_uploader("Upload CSV with 'variant' and 'metric' columns", type="csv", key="srm_upload")
+    
+    st.markdown("### 🚀 Use Built-in Sample Data")
+    if st.button("Load Sample Data"):
+        df = pd.read_csv("https://raw.githubusercontent.com/your-repo/sample_ab_data.csv")
+        st.session_state["ab_data"] = df
+
+    if "ab_data" in st.session_state:
+        df = st.session_state["ab_data"]
+        st.success("Using built-in dataset.")
+        st.dataframe(df.head())
+
     if uploaded:
         df = pd.read_csv(uploaded)
         st.dataframe(df.head())
@@ -163,12 +181,39 @@ elif tab == "A/B Test & Uplift":
     st.title("📊 Upload Your A/B Testing Data")
     uploaded = st.file_uploader("Upload CSV with columns 'variant', 'metric', and optional features", type="csv")
     one_sided = st.checkbox("One-sided Test", value=False)
+    
+    st.markdown("### 🚀 Use Built-in Sample Data")
+    if st.button("Load Sample Data"):
+        df = pd.read_csv("https://raw.githubusercontent.com/your-repo/sample_ab_data.csv")
+        st.session_state["ab_data"] = df
+
+    if "ab_data" in st.session_state:
+        df = st.session_state["ab_data"]
+        st.success("Using built-in dataset.")
+        st.dataframe(df.head())
+
     if uploaded:
         df = pd.read_csv(uploaded)
         st.dataframe(df.head())
         check_srm(df)
         check_normality(df)
         run_ab_test(df, one_sided)
+
+        st.markdown("### 📊 Pre/Post Experiment Trends")
+        fig, ax = plt.subplots()
+        df.groupby("variant")[["pre_metric", "post_metric"]].mean().T.plot(kind="bar", ax=ax)
+        st.pyplot(fig)
+
+        st.markdown("### 🧮 A/B Testing by Cohorts")
+        cohort_feature = st.selectbox("Select a feature to segment by", ["gender", "age", "income"])
+        for value in df[cohort_feature].unique():
+            subset = df[df[cohort_feature] == value]
+            a = subset[subset["variant"] == "A"]["metric"]
+            b = subset[subset["variant"] == "B"]["metric"]
+            if len(a) > 0 and len(b) > 0:
+                stat, p = ttest_ind(a, b, equal_var=False)
+                st.markdown(f"**{cohort_feature} = {value}** — p-value: `{p:.4f}`")
+
         run_uplift_modeling(df)
 elif tab == "Multiple Correction":
     multiple_testing_correction()
