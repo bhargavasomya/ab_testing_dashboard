@@ -1,13 +1,11 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
-from scipy.stats import norm, ttest_ind, mannwhitneyu, chi2_contingency, shapiro
+from scipy.stats import norm, ttest_ind, chi2_contingency, shapiro
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.base import clone
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score
 
 st.set_page_config(layout="wide")
 st.title("🧪 A/B Testing Power Tool")
@@ -26,132 +24,260 @@ if use_sample:
     st.markdown("### 👁️ Sample Dataset Preview")
     st.dataframe(df.head())
 
-# --- Original Functions ---
+
+# --- Functions ---
+
 def power_analysis():
     st.subheader("🧮 Sample Size Calculator")
     p1 = st.slider("Baseline Conversion Rate", 0.01, 0.5, 0.1)
     mde = st.slider("Minimum Detectable Effect", 0.01, 0.3, 0.05)
     alpha = st.slider("Significance Level (α)", 0.01, 0.1, 0.05)
     power = st.slider("Statistical Power (1 - β)", 0.7, 0.99, 0.8)
+
     z_alpha = norm.ppf(1 - alpha / 2)
     z_beta = norm.ppf(power)
     pooled = np.sqrt(2 * p1 * (1 - p1))
     sample = ((z_alpha + z_beta) * pooled / mde) ** 2
     st.metric("📊 Sample Size per Group", f"{int(np.ceil(sample))}")
+
     with st.expander("📘 What is Power Analysis?"):
         st.markdown("Power analysis determines the sample size required to detect a meaningful effect, balancing Type I and Type II errors.")
 
 def check_srm(df):
-    st.subheader("📉 Sample Ratio Mismatch (SRM) Check")
-    variant_col = st.selectbox("Select variant column for SRM check", options=df.columns)
-    variants = df[variant_col].value_counts()
-    st.bar_chart(variants)
-    expected = [len(df) / len(variants)] * len(variants)
-    chi2, p, _, _ = chi2_contingency([variants.values, expected])
-    st.write(f"Chi-square p-value: {p:.4f}")
-
-# --- Enhancements ---
-def is_normal(data):
-    stat, p = shapiro(data)
-    return p > 0.05
-
-def run_frequentist_test(data):
-    variant_col = st.selectbox("Variant column (Frequentist)", options=data.columns)
-    metric_col = st.selectbox("Metric column (Frequentist)", options=data.columns)
-    group_a = data[data[variant_col] == data[variant_col].unique()[0]][metric_col]
-    group_b = data[data[variant_col] == data[variant_col].unique()[1]][metric_col]
-    if is_normal(group_a) and is_normal(group_b):
-        stat, p = ttest_ind(group_a, group_b)
-        method = "T-test (parametric)"
+    st.subheader("📊 Sample Ratio Mismatch (SRM) Check")
+    counts = df["variant"].value_counts()
+    obs = counts.values
+    total = sum(obs)
+    expected = [total / len(obs)] * len(obs)
+    stat, p = chi2_contingency([obs, expected])[:2]
+    st.write("Observed Counts:", {k: int(v) for k, v in counts.items()})
+    st.metric("Chi-square test p-value", f"{p:.4f}")
+    if p < 0.05:
+        st.warning("⚠️ Possible SRM detected!")
     else:
-        stat, p = mannwhitneyu(group_a, group_b)
-        method = "Mann-Whitney U-test (non-parametric)"
-    st.write(f"**{method}** p-value: {p:.4f}")
+        st.success("✅ No SRM detected.")
+    st.bar_chart(counts)
 
-def run_bayesian_test(data):
-    variant_col = st.selectbox("Variant column (Bayesian)", options=data.columns)
-    metric_col = st.selectbox("Metric column (Bayesian)", options=data.columns)
-    summary = data.groupby(variant_col)[metric_col].agg(['mean', 'std', 'count'])
+    with st.expander("📘 Educational: What is SRM and Why It Matters"):
+        st.markdown("""
+        **Sample Ratio Mismatch (SRM)** occurs when the observed number of users in control and treatment groups
+        significantly deviates from the expected ratio. This can happen due to bugs, tracking issues, or biased assignment logic.
+
+        **Why It Matters:**
+        - SRM violates the assumption of random assignment.
+        - It can lead to invalid statistical inferences.
+
+        **Test Used:** We use a **Chi-square goodness-of-fit test** to compare observed group sizes against expected ones.
+        A p-value < 0.05 suggests the assignment might not be random.
+        """)
+
+
+    with st.expander("📘 What is SRM and Why Does It Matter?"):
+        st.markdown("SRM occurs when your variant group sizes are imbalanced despite randomization. This can bias your results.")
+
+def check_normality(df):
+    st.subheader("🧪 Normality Check")
+    variants = df["variant"].unique()
+    for v in variants:
+        p_val = shapiro(df[df["variant"] == v]["metric"])[1]
+        st.write(f"Variant {v} Shapiro-Wilk p-value:", p_val)
+        plt.hist(df[df["variant"] == v]["metric"], bins=10, alpha=0.5, label=str(v))
+        if p_val < 0.05:
+            st.warning(f"⚠️ Variant {v} data may not be normally distributed.")
+        else:
+            st.success(f"✅ Variant {v} passes normality test.")
+    st.pyplot(plt.gcf())
+
+    with st.expander("📘 Educational: Normality Check"):
+        st.markdown("""
+        **Normality tests** check whether your metric is approximately normally distributed in each variant group.
+
+        **Why It Matters:**
+        - Many statistical tests (e.g., t-tests) assume normal distribution of the data.
+        - Violations can lead to inaccurate p-values or reduced test power.
+
+        **Test Used:** We use the **Shapiro-Wilk test** to assess normality.
+        - A p-value < 0.05 means the data is likely **not** normally distributed.
+
+        **Alternative Tests:** If normality is violated, consider:
+        - Non-parametric tests like Mann-Whitney U
+        - Bootstrap methods
+        """)
+
+
+def run_ab_test(df):
+    st.subheader("📈 Run A/B Test")
+    alternative = st.radio("Test Type", ["Two-sided", "One-sided"])
+    var = df["variant"].unique()
+    data1 = df[df["variant"] == var[0]]["metric"]
+    data2 = df[df["variant"] == var[1]]["metric"]
+    stat, p = ttest_ind(data1, data2, equal_var=False)
+    if alternative == "One-sided":
+        p /= 2
+    st.write(f"t-stat: {stat:.4f}, p-value: {p:.4f}")
+    if p < 0.05:
+        st.success("✅ Statistically significant difference.")
+    else:
+        st.info("ℹ️ No significant difference found.")
+
+def run_uplift_modeling(df):
+    st.subheader("📈 Uplift Modeling - T Learner")
+    features = st.multiselect("Choose features", [col for col in df.columns if col not in ["variant", "metric"]])
+    if not features:
+        st.warning("Please select features")
+        return
+    df["treatment"] = (df["variant"] == df["variant"].unique()[1]).astype(int)
+    X = df[features]
+
+    # Encode categorical features
+    X = pd.get_dummies(X, drop_first=True)
+
+    y = df["metric"]
+    model_t = RandomForestClassifier().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
+    model_c = clone(model_t).fit(X[df["treatment"] == 0], y[df["treatment"] == 0])
+    uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
+    st.write("Avg uplift:", np.mean(uplift))
+    st.line_chart(uplift)
+
+def run_trend_check(df):
+    st.subheader("📈 Pre/Post Trend Analysis")
+    if "date" not in df.columns:
+        st.error("Missing 'date' column")
+        return
+    df["date"] = pd.to_datetime(df["date"])
+    daily = df.groupby(["date", "variant"])["metric"].mean().unstack()
     fig, ax = plt.subplots()
-    for idx, row in summary.iterrows():
-        mu = row['mean']
-        sigma = row['std'] / np.sqrt(row['count'])
-        x = np.linspace(mu - 4*sigma, mu + 4*sigma, 100)
-        y = norm.pdf(x, mu, sigma)
-        ax.plot(x, y, label=f"Variant {idx}")
-    ax.set_title("Posterior Distributions (approx.)")
-    ax.legend()
+    daily.plot(ax=ax)
+    ax.set_title("Parallel Trends")
     st.pyplot(fig)
-    for idx, row in summary.iterrows():
-        st.write(f"Variant {idx} → mean: {row['mean']:.4f}, std: {row['std']:.4f}, n: {int(row['count'])}")
 
-def multi_metric_analysis(data):
-    variant_col = st.selectbox("Variant column (Multi-metric)", options=data.columns)
-    metric_cols = st.multiselect("Select multiple metric columns", options=data.select_dtypes(include=np.number).columns.tolist())
-    alpha = 0.05 / len(metric_cols)
-    for metric in metric_cols:
-        group_a = data[data[variant_col] == data[variant_col].unique()[0]][metric]
-        group_b = data[data[variant_col] == data[variant_col].unique()[1]][metric]
-        p = ttest_ind(group_a, group_b).pvalue
-        st.write(f"{metric} — Adjusted p: {p:.4f}, Significant: {p < alpha}")
+def apply_fdr_correction(pvals_dict):
+    st.subheader("🎯 Multiple Testing Corrections")
+    method = st.selectbox("Correction Method", ["Bonferroni", "Benjamini-Hochberg"])
+    df_p = pd.DataFrame(pvals_dict.items(), columns=["metric", "p_value"])
+    if method == "Bonferroni":
+        df_p["adj_p"] = df_p["p_value"] * len(df_p)
+    else:
+        df_p = df_p.sort_values("p_value").reset_index(drop=True)
+        df_p["rank"] = df_p.index + 1
+        df_p["adj_p"] = df_p["p_value"] * len(df_p) / df_p["rank"]
+    df_p["significant"] = df_p["adj_p"] < 0.05
+    st.write(df_p)
 
-def segment_analysis(data):
-    segment_col = st.selectbox("Segment column", options=data.columns)
-    segment_vals = data[segment_col].unique()
-    for val in segment_vals:
-        st.subheader(f"Segment: {val}")
-        seg_data = data[data[segment_col] == val]
-        run_frequentist_test(seg_data)
+# Design Simulator removed
+    base = st.slider("Baseline Rate", 0.01, 0.3, 0.1)
+    mde = st.slider("Minimum Detectable Effect", 0.005, 0.1, 0.02)
+    power = st.slider("Power", 0.5, 0.99, 0.8)
+    alpha = st.slider("Alpha", 0.01, 0.1, 0.05)
+    z_alpha = norm.ppf(1 - alpha / 2)
+    z_beta = norm.ppf(power)
+    pooled = np.sqrt(2 * base * (1 - base))
+    sample = ((z_alpha + z_beta) * pooled / mde) ** 2
+    st.metric("Sample Size per Group", f"{int(np.ceil(sample))}")
 
-def run_uplift_model(data):
-    variant_col = st.selectbox("Variant column (Uplift)", options=data.columns)
-    target_col = st.selectbox("Target column (binary)", options=data.columns)
-    feature_cols = st.multiselect("Feature columns", [c for c in data.columns if c not in [variant_col, target_col]])
-    df_model = data[[variant_col, target_col] + feature_cols].dropna()
-    X = df_model[feature_cols + [variant_col]]
-    X[variant_col] = X[variant_col].astype('category').cat.codes
-    y = df_model[target_col]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y)
-    model = LogisticRegression()
-    model.fit(X_train, y_train)
+def educational_toggle():
+    st.subheader("📘 Explain Mode")
+    mode = st.radio("Choose View", ["Beginner", "Advanced", "ELI5"])
+    if mode == "Beginner":
+        st.markdown("**A/B testing** compares group averages to test for significance.")
+    elif mode == "Advanced":
+        st.markdown("You may use t-tests, FDR corrections, or uplift modeling.")
+    else:
+        st.markdown("💡 *A/B tests ask: 'Is version B better than version A?'*")
 
-    # Plot uplift prediction probabilities
-    probs = model.predict_proba(X_test)[:, 1]
-    fig, ax = plt.subplots()
-    ax.hist(probs[y_test == 0], bins=20, alpha=0.5, label='Control', color='blue')
-    ax.hist(probs[y_test == 1], bins=20, alpha=0.5, label='Treatment', color='green')
-    ax.set_title("Uplift Prediction Probability Distributions")
-    ax.legend()
-    st.pyplot(fig)
-    uplift_score = roc_auc_score(y_test, model.predict_proba(X_test)[:, 1])
-    st.write(f"Uplift AUC Score: {uplift_score:.4f}")
+# --- Navigation ---
+tab = st.sidebar.radio("Choose Tool", [
+    "Sample Size Calculator",
+    "Check Data Quality",
+    "Run A/B Test",
+    "Run Uplift Modeling",
+    "Pre/Post Trends",
+    "Multiple Testing Correction",
+        "Education"
+])
 
-# --- Main App Logic ---
-if df is not None:
-    st.header("1️⃣ Power Analysis")
+# --- Run Modules ---
+if tab == "Sample Size Calculator":
     power_analysis()
+elif tab == "Check Data Quality":
+    if df is not None:
+        check_srm(df)
+        check_normality(df)
+    else:
+        st.warning("Please upload or select sample data.")
+elif tab == "Run A/B Test":
+    if df is not None:
+        run_ab_test(df)
+    else:
+        st.warning("Please upload or select sample data.")
+elif tab == "Run Uplift Modeling":
+    if df is not None:
+        run_uplift_modeling(df)
+    else:
+        st.warning("Please upload or select sample data.")
+elif tab == "Pre/Post Trends":
+    if df is not None:
+        run_trend_check(df)
+    else:
+        st.warning("Please upload data with a 'date' column.")
+elif tab == "Multiple Testing Correction":
+    apply_fdr_correction({"Metric A": 0.03, "Metric B": 0.04, "Metric C": 0.06})
 
-    st.header("2️⃣ SRM Check")
-    check_srm(df)
-
-    st.header("3️⃣ Adaptive Frequentist A/B Test")
-    run_frequentist_test(df)
-
-    st.header("4️⃣ Bayesian A/B Test")
-    run_bayesian_test(df)
-
-    st.header("5️⃣ Multi-Metric Testing with Bonferroni Correction")
-    multi_metric_analysis(df)
-
-    st.header("6️⃣ Segment-Level Comparisons")
-    segment_analysis(df)
-
-    st.header("7️⃣ Uplift Modeling with Logistic Regression")
-    run_uplift_model(df)
-
-    st.header("8️⃣ Multiple Test Correction Explanation")
+elif tab == "Education":
+    st.header("📚 A/B Testing Tutorial")
     st.markdown("""
-    When multiple hypotheses are tested simultaneously, the chance of a false positive increases. To address this, we use **Bonferroni Correction**, dividing the alpha level (e.g., 0.05) by the number of tests to control the overall Type I error rate.
+    ## 🧪 What is A/B Testing?
+
+    A/B testing is an experiment comparing two or more variants (A, B, etc.) to determine which one performs better for a given metric.
+
+    ---
+
+    ## 🔍 Sample Ratio Mismatch (SRM)
+
+    SRM occurs when the number of users in each group is not proportionate as expected under random assignment. This could signal a bug in targeting or assignment logic.
+    We detect SRM using a **Chi-square goodness-of-fit test**.
+
+    ---
+
+    ## 📊 Normality Checks
+
+    Statistical tests like t-tests assume normal distribution of the metric. We check this using the **Shapiro-Wilk test**. If the distribution fails this check, we advise:
+    - Using non-parametric tests (e.g., Mann-Whitney U)
+    - Bootstrapping
+
+    ---
+
+    ## 🎯 A/B Testing
+
+    We run standard t-tests (one-sided or two-sided) to compare the means of treatment and control groups.
+
+    ---
+
+    ## 📈 Uplift Modeling
+
+    Uplift modeling estimates the causal effect of an intervention per individual. We use a **T-Learner**:
+    - Train one model on the treatment group
+    - Train another on the control group
+    - Subtract their predictions to compute uplift
+
+    ---
+
+    ## 🧠 Multiple Testing Correction
+
+    If testing multiple metrics, we apply:
+    - **Bonferroni**: very strict
+    - **Benjamini-Hochberg**: controls the false discovery rate
+
+    ---
+
+    ## 📉 Pre/Post Trend Analysis
+
+    When time-series data is present, we recommend checking parallel pre-trends to ensure experimental validity. Drift post-intervention is also visualized.
+
+    ---
+
+    ## 🎓 "Explain Like I'm 5" Mode
+
+    We've added toggles throughout the tool that simplify statistical concepts for new learners!
     """)
-else:
-    st.warning("Please upload a CSV file or use the sample dataset to proceed.")
+
