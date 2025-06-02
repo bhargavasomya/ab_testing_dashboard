@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency, shapiro, ttest_ind
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.base import clone
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
@@ -91,7 +91,7 @@ def run_uplift_modeling(df):
     y = df["metric"]
 
     if model_choice == "T-Learner (Two Random Forests)":
-        model_t = RandomForestClassifier().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
+        model_t = RandomForestRegressor().fit(X[df["treatment"] == 1], y[df["treatment"] == 1])
         model_c = clone(model_t).fit(X[df["treatment"] == 0], y[df["treatment"] == 0])
         uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
     else:
