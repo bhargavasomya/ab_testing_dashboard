@@ -32,6 +32,7 @@ def sample_size_calculator():
     analysis = NormalIndPower()
     sample_size = analysis.solve_power(effect_size=effect_size, power=power/100, alpha=alpha/100, ratio=1)
     st.success("📊 You need approximately {:,} users per group.".format(int(sample_size)))
+:,} users per group.")
 
 def check_srm(df):
     st.subheader("🔍 Sample Ratio Mismatch (SRM) Check")
@@ -97,7 +98,6 @@ def run_uplift_modeling(df):
         if model_t.predict_proba(X).shape[1] < 2 or model_c.predict_proba(X).shape[1] < 2:
         st.warning("⚠️ Uplift modeling could not be completed due to insufficient class variation in one of the groups.")
         return
-
     uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
     else:
         df_model = df[features + ["treatment"]].copy()
@@ -314,7 +314,6 @@ def run_uplift_modeling(df):
         if model_t.predict_proba(X).shape[1] < 2 or model_c.predict_proba(X).shape[1] < 2:
         st.warning("⚠️ Uplift modeling could not be completed due to insufficient class variation in one of the groups.")
         return
-
     uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
     else:
         model_lr = LogisticRegression().fit(pd.concat([X, df["treatment"]], axis=1), y)
