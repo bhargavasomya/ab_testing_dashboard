@@ -193,50 +193,50 @@ def run_ab_test(df):
     st.pyplot(fig)
     with st.expander("📘 Understanding Effect Sizes"):
     st.markdown("""
-Effect size quantifies the **magnitude** of the difference between groups:
+    Effect size quantifies the **magnitude** of the difference between groups:
 
-- **Cohen’s d**: Standardized difference in means (for t-tests). Rules of thumb:
+    - **Cohen’s d**: Standardized difference in means (for t-tests). Rules of thumb:
     - 0.2 = small effect
     - 0.5 = medium
     - 0.8 = large
-- **Cliff’s Delta**: Proportion of values in one group higher than in the other (non-parametric).
+    - **Cliff’s Delta**: Proportion of values in one group higher than in the other (non-parametric).
 
-Use effect sizes alongside p-values to interpret practical significance, not just statistical.
+    Use effect sizes alongside p-values to interpret practical significance, not just statistical.
     """)
     with st.expander("📘 What is a Confidence Interval?"):
     st.markdown("""
-A **confidence interval (CI)** gives a range of values within which we expect the true population parameter (e.g., mean difference or uplift) to fall, with a certain level of confidence (typically 95%).
+    A **confidence interval (CI)** gives a range of values within which we expect the true population parameter (e.g., mean difference or uplift) to fall, with a certain level of confidence (typically 95%).
 
----
+    ---
 
-### ✅ Key Concepts
+    ### ✅ Key Concepts
 
-- A 95% confidence interval means:  
-  *“If we repeated this experiment 100 times, we expect the true effect to lie within this interval in 95 of those experiments.”*
+    - A 95% confidence interval means:  
+      *“If we repeated this experiment 100 times, we expect the true effect to lie within this interval in 95 of those experiments.”*
 
-- CI = **[lower bound, upper bound]**
+    - CI = **[lower bound, upper bound]**
 
----
+    ---
 
-### 💡 Why It Matters
+    ### 💡 Why It Matters
 
-- It helps **quantify uncertainty** in your estimates.
-- If a 95% CI for the mean difference **does not include zero**, the result is statistically significant at α = 0.05.
-- CIs offer more information than just p-values, providing **both direction and size** of the effect.
+    - It helps **quantify uncertainty** in your estimates.
+    - If a 95% CI for the mean difference **does not include zero**, the result is statistically significant at α = 0.05.
+    - CIs offer more information than just p-values, providing **both direction and size** of the effect.
 
----
+    ---
 
-### 🛠️ Interpretation Examples
+    ### 🛠️ Interpretation Examples
 
-- ✅ CI = [0.01, 0.05]: The treatment improves conversion by 1–5%.
-- ⚠️ CI = [-0.02, 0.04]: The effect is inconclusive (it could be positive or negative).
-- ❌ CI = [-0.05, -0.01]: The treatment has a negative impact.
+    - ✅ CI = [0.01, 0.05]: The treatment improves conversion by 1–5%.
+    - ⚠️ CI = [-0.02, 0.04]: The effect is inconclusive (it could be positive or negative).
+    - ❌ CI = [-0.05, -0.01]: The treatment has a negative impact.
 
----
+    ---
 
-### 📊 Best Practice
+    ### 📊 Best Practice
 
-Always report CIs alongside p-values and effect sizes to give a **more complete picture** of your experiment results.
+    Always report CIs alongside p-values and effect sizes to give a **more complete picture** of your experiment results.
     """)
 
 
