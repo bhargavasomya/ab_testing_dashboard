@@ -81,7 +81,7 @@ def check_normality(df):
     st.subheader("🧪 Normality Check")
     variants = df["variant"].unique()
     for v in variants:
-        p_val = shapiro(df[df["variant"] == v]["metric"])["p-value"] if "variant" in df.columns and "metric" in df.columns else 1.0
+        p_val = shapiro(df[df["variant"] == v]["metric"])[1]
         st.write(f"Variant {v} Shapiro-Wilk p-value:", p_val)
         plt.hist(df[df["variant"] == v]["metric"], bins=10, alpha=0.5, label=str(v))
         if p_val < 0.05:
@@ -221,7 +221,7 @@ tab = st.sidebar.radio("Choose Tool", [
     "Sample Size Calculator",
     "Check Data Quality",
     "Run A/B Test",
-    "Run Segmented A/B Test"
+    "Run Segmented A/B Test",
     "Run Uplift Modeling",
     "Pre/Post Trends",
     "Multiple Testing Correction",
