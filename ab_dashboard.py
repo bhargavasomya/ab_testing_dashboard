@@ -192,7 +192,7 @@ def run_ab_test(df):
     ax.set_xticks([])
     st.pyplot(fig)
     with st.expander("📘 Understanding Effect Sizes"):
-    st.markdown("""
+        st.markdown("""
     Effect size quantifies the **magnitude** of the difference between groups:
 
     - **Cohen’s d**: Standardized difference in means (for t-tests). Rules of thumb:
@@ -202,9 +202,9 @@ def run_ab_test(df):
     - **Cliff’s Delta**: Proportion of values in one group higher than in the other (non-parametric).
 
     Use effect sizes alongside p-values to interpret practical significance, not just statistical.
-    """)
+        """)
     with st.expander("📘 What is a Confidence Interval?"):
-    st.markdown("""
+        st.markdown("""
     A **confidence interval (CI)** gives a range of values within which we expect the true population parameter (e.g., mean difference or uplift) to fall, with a certain level of confidence (typically 95%).
 
     ---
@@ -237,7 +237,7 @@ def run_ab_test(df):
     ### 📊 Best Practice
 
     Always report CIs alongside p-values and effect sizes to give a **more complete picture** of your experiment results.
-    """)
+        """)
 
 
 def run_uplift_modeling(df):
@@ -285,7 +285,7 @@ def run_trend_check(df):
     ax.set_title("Parallel Trends")
     st.pyplot(fig)
     with st.expander("📘 Why Check Pre/Post Trends?"):
-    st.markdown("""
+        st.markdown("""
 Pre/post trend analysis checks whether groups followed similar trends before the test started.
 
 Why important?
@@ -293,7 +293,7 @@ Why important?
 - Ensures **parallel trend assumption**, critical for causal inference in time-series experiments.
 
 We visualize daily metrics per group to check alignment before and divergence after launch.
-    """)
+        """)
 
 def apply_fdr_correction(pvals_dict):
     st.subheader("🎯 Multiple Testing Corrections")
@@ -308,7 +308,7 @@ def apply_fdr_correction(pvals_dict):
     df_p["significant"] = df_p["adj_p"] < 0.05
     st.write(df_p)
     with st.expander("📘 Why Apply Multiple Testing Correction?"):
-    st.markdown("""
+        st.markdown("""
 If you're testing **many metrics** (or many variants), the chance of a **false positive** increases.
 
 We apply:
@@ -319,7 +319,7 @@ Use when:
 - Comparing multiple metrics
 - Running tests on several cohorts
 - Running many variants in the same experiment
-    """)
+        """)
 
 
 
