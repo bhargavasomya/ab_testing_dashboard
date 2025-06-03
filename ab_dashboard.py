@@ -44,8 +44,57 @@ def power_analysis():
     st.metric("📊 Sample Size per Group", f"{int(np.ceil(sample))}")
 
     with st.expander("📘 What is Power Analysis?"):
-        st.markdown("Power analysis determines the sample size required to detect a meaningful effect, balancing Type I and Type II errors.")
+        st.markdown(r"""
+**Power analysis** helps you determine how many users you need per group to detect a meaningful difference between variants.
 
+---
+
+### ✅ Why It Matters
+
+- Ensures your test can detect real differences.
+- Prevents **false negatives** (underpowered test).
+- Avoids wasting users in **overpowered tests**.
+
+---
+
+### 📐 Sample Size Formula
+
+We use the formula for comparing **two proportions**:
+
+\[
+n = \left( \frac{Z_{1 - \alpha/2} + Z_{1 - \beta}}{\text{MDE} / \sqrt{2 \cdot p \cdot (1 - p)}} \right)^2
+\]
+
+Where:
+- \( n \) = Required users per group  
+- \( \alpha \) = Significance level (e.g., 0.05)  
+- \( \beta \) = Probability of Type II error (1 - power)  
+- \( Z_{1 - \alpha/2} \) = Z-score for your confidence level (e.g., 1.96 for 95%)  
+- \( Z_{1 - \beta} \) = Z-score for desired power (e.g., 0.84 for 80%)  
+- \( p \) = Baseline conversion rate  
+- MDE = Minimum Detectable Effect
+
+---
+
+### 🧮 Example
+
+Say you have:
+- Baseline conversion = 10%  
+- MDE = 5%  
+- α = 0.05  
+- Power = 0.80
+
+Then:
+
+\[
+n = \left( \frac{1.96 + 0.84}{0.05 / \sqrt{2 \cdot 0.10 \cdot (1 - 0.10)}} \right)^2 ≈ 783
+\]
+
+➡️ So, you'd need about **783 users per group** to detect a 5% lift at 95% confidence with 80% power.
+
+---
+    """)
+        
 def check_srm(df):
     st.subheader("📊 Sample Ratio Mismatch (SRM) Check")
     counts = df["variant"].value_counts()
@@ -273,6 +322,7 @@ Why use it?
 - Go beyond “did it work?” to “for whom did it work?”
         """)
 
+    
 def run_trend_check(df):
     st.subheader("📈 Pre/Post Trend Analysis")
     if "date" not in df.columns:
