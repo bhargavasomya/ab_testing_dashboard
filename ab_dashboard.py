@@ -107,7 +107,7 @@ def check_normality(df):
 
 
 def 
-    st.subheader("📈 Run A/B Test")
+def run_ab_test(df):
     alternative = st.radio("Test Type", ["Two-sided", "One-sided"])
     var = df["variant"].unique()
     data1 = df[df["variant"] == var[0]]["metric"] if "variant" in df.columns and "metric" in df.columns else pd.Series(dtype=float)
