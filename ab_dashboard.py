@@ -463,67 +463,108 @@ elif tab == "Multiple Testing Correction":
     apply_fdr_correction({"Metric A": 0.03, "Metric B": 0.04, "Metric C": 0.06})
 
 elif tab == "Education":
-    st.header("📚 A/B Testing Tutorial")
+    st.header("📚 A/B Testing Educational Hub")
     st.markdown("""
-    ## 🧪 What is A/B Testing?
+## 🧪 What is A/B Testing?
 
-    A/B testing is an experiment comparing two or more variants (A, B, etc.) to determine which one performs better for a given metric.
+A/B testing compares the performance of two or more versions of a product to determine which one performs better for a specific outcome metric.
 
-    ---
+---
 
-    ## 🔍 Sample Ratio Mismatch (SRM)
+## 🎯 Key Concepts
 
-    SRM occurs when the number of users in each group is not proportionate as expected under random assignment. This could signal a bug in targeting or assignment logic.
-    We detect SRM using a **Chi-square goodness-of-fit test**.
+### 1. Hypothesis Testing
 
-    ---
+We evaluate:
+- **Null Hypothesis (H₀)**: No difference between A and B
+- **Alternative Hypothesis (H₁)**: There is a difference
 
-    ## 📊 Normality Checks
+We use **p-values** to reject or accept H₀.
 
-    Statistical tests like t-tests assume normal distribution of the metric. We check this using the **Shapiro-Wilk test**. If the distribution fails this check, we advise:
-    - Using non-parametric tests (e.g., Mann-Whitney U)
-    - Bootstrapping
+---
 
-    ---
+### 2. Power Analysis
 
-    ## 🎯 A/B Testing
+**Power analysis** determines how many samples are needed to detect a meaningful difference. It balances:
+- **Type I Error (α)**: False positive
+- **Type II Error (β)**: False negative
 
-    We run standard t-tests (one-sided or two-sided) to compare the means of treatment and control groups.
+**Formula for sample size** in comparing proportions:
 
-    ---
+\[
+n = \\left( \\frac{Z_{1 - \\alpha/2} + Z_{1 - \\beta}}{\\text{MDE} / \\sqrt{2 \\cdot p \\cdot (1 - p)}} \\right)^2
+\]
 
-    ## 📈 Uplift Modeling
+---
 
-    Uplift modeling estimates the causal effect of an intervention per individual. We use a **T-Learner**:
-    - Train one model on the treatment group
-    - Train another on the control group
-    - Subtract their predictions to compute uplift
+### 3. Sample Ratio Mismatch (SRM)
 
-    ---
+**SRM** means the actual group sizes deviate from the expected ratio. Causes:
+- Bugs in randomization
+- Biased assignment
 
-    ## 🧠 Multiple Testing Correction
+Detected using a **Chi-square test**.
 
-    - **Why Adjust?** When you test many hypotheses, even at 5% significance, you increase the chance of false positives.
-    - **Bonferroni** is conservative: divide α by number of tests.
-    - **Benjamini-Hochberg (FDR)** controls the expected proportion of false discoveries.
+---
 
-    Use corrections when:
-    - You're comparing multiple metrics
-    - You're slicing by cohorts
-    - You're running the same test across multiple variants
-    ---
+### 4. Normality Checks
 
-    ## 📉 Pre/Post Trend Analysis
+**Why?** Many tests (like t-tests) assume normal distribution. We use the **Shapiro-Wilk test**. If violated, we use:
+- **Mann-Whitney U test**
+- **Bootstrapping**
 
-    When time-series data is present, we recommend checking parallel pre-trends to ensure experimental validity. Drift post-intervention is also visualized.
+---
 
-    ---
+### 5. A/B Testing Methods
 
-    ## 🎓 "Explain Like I'm 5" Mode
+- **T-Test**: Compares means if data is normal
+- **Mann-Whitney U Test**: Non-parametric alternative
+- **Cliff’s Delta / Cohen’s d**: Effect size measures
+- **Confidence Intervals**: Estimate range for mean difference
 
-    We've added toggles throughout the tool that simplify statistical concepts for new learners!
-    """)
+---
 
+### 6. Uplift Modeling
+
+**Uplift modeling** estimates the causal impact of treatment at the individual level.
+
+**T-Learner**: Train two models (treatment/control), compute uplift = predicted_treatment - predicted_control
+
+**Why?**
+- Understand *who* benefits from treatment
+- Target interventions better
+
+---
+
+### 7. Segmented A/B Testing
+
+Tests impact of variants within **user segments** (e.g., age, region, device). Helps detect **heterogeneous treatment effects**.
+
+---
+
+### 8. Pre/Post Trend Analysis
+
+Checks if groups were following similar trends *before* the test. Ensures **parallel trends assumption** holds.
+
+---
+
+### 9. Multiple Testing Correction
+
+When testing multiple metrics, the risk of false positives increases. Use:
+- **Bonferroni**: Very conservative
+- **Benjamini-Hochberg (FDR)**: Controls false discovery rate
+
+---
+
+### 10. Confidence Intervals
+
+Confidence intervals provide a **range of plausible values** for your metric difference.
+
+- If it **doesn’t include 0**, result is statistically significant.
+- Gives more context than p-values alone.
+
+---
+""")
 
 
 # # --- Multiple Testing Correction ---
