@@ -44,28 +44,27 @@ def power_analysis():
     st.metric("📊 Sample Size per Group", f"{int(np.ceil(sample))}")
 
     with st.expander("📘 What is Power Analysis?"):
-        st.markdown(r"""
-**Power analysis** helps you determine how many users you need per group to detect a meaningful difference between variants.
+        st.markdown("### 📐 Power Analysis")
+        st.markdown("""
+    **Power analysis** helps you determine how many users you need per group to detect a meaningful difference between variants.
 
----
+    ---
 
-### ✅ Why It Matters
+    ### ✅ Why It Matters
 
-- Ensures your test can detect real differences.
-- Prevents **false negatives** (underpowered test).
-- Avoids wasting users in **overpowered tests**.
+    - Ensures your test can detect real differences.
+    - Prevents **false negatives** (underpowered test).
+    - Avoids wasting users in **overpowered tests**.
+    """)
 
----
+        st.markdown("### 📐 Sample Size Formula")
+        st.markdown("We use the formula for comparing **two proportions**:")
+        st.latex(r"""
+    n = \left( \frac{Z_{1 - \alpha/2} + Z_{1 - \beta}}{\text{MDE} / \sqrt{2 \cdot p \cdot (1 - p)}} \right)^2
+        """)
 
-### 📐 Sample Size Formula
-
-We use the formula for comparing **two proportions**:
-
-\[
-n = \left( \frac{Z_{1 - \alpha/2} + Z_{1 - \beta}}{\text{MDE} / \sqrt{2 \cdot p \cdot (1 - p)}} \right)^2
-\]
-
-Where:
+        st.markdown("""
+Where:  
 - \( n \) = Required users per group  
 - \( \alpha \) = Significance level (e.g., 0.05)  
 - \( \beta \) = Probability of Type II error (1 - power)  
@@ -73,27 +72,24 @@ Where:
 - \( Z_{1 - \beta} \) = Z-score for desired power (e.g., 0.84 for 80%)  
 - \( p \) = Baseline conversion rate  
 - MDE = Minimum Detectable Effect
+    """)
 
----
-
-### 🧮 Example
-
-Say you have:
+        st.markdown("### 🧮 Example Calculation")
+        st.markdown("Say you have:")
+st.markdown("""
 - Baseline conversion = 10%  
 - MDE = 5%  
 - α = 0.05  
 - Power = 0.80
+""")
 
-Then:
+        st.markdown("Then:")
+        st.latex(r"""
+n = \left( \frac{1.96 + 0.84}{0.05 / \sqrt{2 \cdot 0.10 \cdot (1 - 0.10)}} \right)^2 \approx 783
+""")
 
-\[
-n = \left( \frac{1.96 + 0.84}{0.05 / \sqrt{2 \cdot 0.10 \cdot (1 - 0.10)}} \right)^2 ≈ 783
-\]
+        st.success("➡️ You'd need about **783 users per group** to detect a 5% lift at 95% confidence with 80% power.")
 
-➡️ So, you'd need about **783 users per group** to detect a 5% lift at 95% confidence with 80% power.
-
----
-    """)
         
 def check_srm(df):
     st.subheader("📊 Sample Ratio Mismatch (SRM) Check")
@@ -490,11 +486,13 @@ We use **p-values** to reject or accept H₀.
 - **Type II Error (β)**: False negative
 
 **Formula for sample size** in comparing proportions:
+""")
+    st.latex(r"""
+n = \left( \frac{1.96 + 0.84}{0.05 / \sqrt{2 \cdot 0.10 \cdot (1 - 0.10)}} \right)^2 \approx 783
+""")
 
-\[
-n = \\left( \\frac{Z_{1 - \\alpha/2} + Z_{1 - \\beta}}{\\text{MDE} / \\sqrt{2 \\cdot p \\cdot (1 - p)}} \\right)^2
-\]
 
+    st.markdown("""
 ---
 
 ### 3. Sample Ratio Mismatch (SRM)
