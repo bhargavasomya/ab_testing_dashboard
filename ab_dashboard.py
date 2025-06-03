@@ -302,10 +302,14 @@ elif tab == "Education":
 
     ## 🧠 Multiple Testing Correction
 
-    If testing multiple metrics, we apply:
-    - **Bonferroni**: very strict
-    - **Benjamini-Hochberg**: controls the false discovery rate
+    - **Why Adjust?** When you test many hypotheses, even at 5% significance, you increase the chance of false positives.
+    - **Bonferroni** is conservative: divide α by number of tests.
+    - **Benjamini-Hochberg (FDR)** controls the expected proportion of false discoveries.
 
+    Use corrections when:
+    - You're comparing multiple metrics
+    - You're slicing by cohorts
+    - You're running the same test across multiple variants
     ---
 
     ## 📉 Pre/Post Trend Analysis
@@ -321,53 +325,53 @@ elif tab == "Education":
 
 
 
-# --- Multiple Testing Correction ---
-if df is not None and "variant" in df.columns and "metric" in df.columns:
-    st.subheader("📊 Multiple Testing Correction")
+# # --- Multiple Testing Correction ---
+# if df is not None and "variant" in df.columns and "metric" in df.columns:
+#     st.subheader("📊 Multiple Testing Correction")
 
-    st.markdown("If you're testing multiple metrics or hypotheses, it's important to adjust for multiple comparisons to avoid inflated false positive rates.")
+#     st.markdown("If you're testing multiple metrics or hypotheses, it's important to adjust for multiple comparisons to avoid inflated false positive rates.")
 
-    metrics = df.select_dtypes(include='number').columns.tolist()
-    selected_metrics = st.multiselect("Select numeric metrics to test", metrics)
+#     metrics = df.select_dtypes(include='number').columns.tolist()
+#     selected_metrics = st.multiselect("Select numeric metrics to test", metrics)
 
-    if len(selected_metrics) >= 2:
-        import scipy.stats as stats
-        from statsmodels.stats.multitest import multipletests
+#     if len(selected_metrics) >= 2:
+#         import scipy.stats as stats
+#         from statsmodels.stats.multitest import multipletests
 
-        group_a = df[df["variant"] == "A"]
-        group_b = df[df["variant"] == "B"]
+#         group_a = df[df["variant"] == "A"]
+#         group_b = df[df["variant"] == "B"]
 
-        p_values = []
-        for metric in selected_metrics:
-            _, p = stats.ttest_ind(group_a[metric], group_b[metric], nan_policy="omit")
-            p_values.append(p)
+#         p_values = []
+#         for metric in selected_metrics:
+#             _, p = stats.ttest_ind(group_a[metric], group_b[metric], nan_policy="omit")
+#             p_values.append(p)
 
-        st.write("Raw p-values:", p_values)
+#         st.write("Raw p-values:", p_values)
 
-        method = st.selectbox("Choose correction method", ["Bonferroni", "Benjamini-Hochberg (FDR)"])
-        if method == "Bonferroni":
-            corrected = multipletests(p_values, alpha=0.05, method="bonferroni")
-        else:
-            corrected = multipletests(p_values, alpha=0.05, method="fdr_bh")
+#         method = st.selectbox("Choose correction method", ["Bonferroni", "Benjamini-Hochberg (FDR)"])
+#         if method == "Bonferroni":
+#             corrected = multipletests(p_values, alpha=0.05, method="bonferroni")
+#         else:
+#             corrected = multipletests(p_values, alpha=0.05, method="fdr_bh")
 
-        reject, pvals_corrected, _, _ = corrected
-        results_df = pd.DataFrame({
-            "Metric": selected_metrics,
-            "Raw p-value": p_values,
-            "Corrected p-value": pvals_corrected,
-            "Reject Null?": reject
-        })
+#         reject, pvals_corrected, _, _ = corrected
+#         results_df = pd.DataFrame({
+#             "Metric": selected_metrics,
+#             "Raw p-value": p_values,
+#             "Corrected p-value": pvals_corrected,
+#             "Reject Null?": reject
+#         })
 
-        st.dataframe(results_df)
+#         st.dataframe(results_df)
 
-        with st.expander("📘 Learn More About Multiple Testing"):
-            st.markdown("""
-- **Why Adjust?** When you test many hypotheses, even at 5% significance, you increase the chance of false positives.
-- **Bonferroni** is conservative: divide α by number of tests.
-- **Benjamini-Hochberg (FDR)** controls the expected proportion of false discoveries.
+#         with st.expander("📘 Learn More About Multiple Testing"):
+#             st.markdown("""
+# - **Why Adjust?** When you test many hypotheses, even at 5% significance, you increase the chance of false positives.
+# - **Bonferroni** is conservative: divide α by number of tests.
+# - **Benjamini-Hochberg (FDR)** controls the expected proportion of false discoveries.
 
-Use corrections when:
-- You're comparing multiple metrics
-- You're slicing by cohorts
-- You're running the same test across multiple variants
-            """)
+# Use corrections when:
+# - You're comparing multiple metrics
+# - You're slicing by cohorts
+# - You're running the same test across multiple variants
+#             """)
