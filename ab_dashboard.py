@@ -106,7 +106,6 @@ def check_normality(df):
         """)
 
 
-def 
 def run_ab_test(df):
     alternative = st.radio("Test Type", ["Two-sided", "One-sided"])
     var = df["variant"].unique()
@@ -121,7 +120,7 @@ def run_ab_test(df):
     else:
         st.info("ℹ️ No significant difference found.")
 
-def 
+def run_uplift_modeling(df):
     st.subheader("📈 Uplift Modeling - T Learner")
     features = st.multiselect("Choose features", [col for col in df.columns if col not in ["variant", "metric"]])
     if not features:
@@ -330,7 +329,7 @@ Use corrections when:
 
 from scipy.stats import mannwhitneyu
 
-def 
+def run_ab_test(df):
     st.subheader("⚖️ A/B Testing Results")
     if "variant" not in df.columns or "metric" not in df.columns:
         st.warning("❗ Please upload data with 'variant' and 'metric' columns.")
@@ -358,7 +357,7 @@ def
 
 
 
-def 
+def run_segmented_ab_test(df):
     st.subheader("🔍 Segmented A/B Testing")
     if "variant" not in df.columns or "metric" not in df.columns:
         st.warning("❗ Please upload data with 'variant' and 'metric' columns.")
