@@ -259,7 +259,7 @@ def run_uplift_modeling(df):
     st.write("Avg uplift:", np.mean(uplift))
     st.line_chart(uplift)
     with st.expander("📘 What is Uplift Modeling?"):
-    st.markdown("""
+        st.markdown("""
 Uplift modeling estimates the **individual-level impact** of the treatment rather than just group-level averages.
 
 We use a **T-Learner** approach:
@@ -271,7 +271,7 @@ Why use it?
 - Identify **who benefits most** from the treatment.
 - Target interventions more effectively.
 - Go beyond “did it work?” to “for whom did it work?”
-    """)
+        """)
 
 def run_trend_check(df):
     st.subheader("📈 Pre/Post Trend Analysis")
@@ -357,7 +357,7 @@ def run_segmented_ab_test(df):
         stat, p = ttest_ind(group1, group2)
         st.write(f"p-value = {p:.4f}")
         with st.expander("📘 What is Segmented A/B Testing?"):
-    st.markdown("""
+            st.markdown("""
 Segmented A/B testing analyzes how different user groups (segments) respond to the treatment.
 
 Why use it?
@@ -365,7 +365,7 @@ Why use it?
 - Helps identify **heterogeneous treatment effects** and tailor product experiences.
 
 Each segment is tested separately to reveal nuanced insights.
-    """)
+        """)
 
 # --- Navigation ---
 tab = st.sidebar.radio("Choose Tool", [
