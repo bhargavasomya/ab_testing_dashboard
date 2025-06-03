@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -79,7 +80,7 @@ def check_normality(df):
     st.subheader("🧪 Normality Check")
     variants = df["variant"].unique()
     for v in variants:
-        p_val = shapiro(df[df["variant"] == v]["metric"])[1]
+        p_val = shapiro(df[df["variant"] == v]["metric"])["p-value"] if "variant" in df.columns and "metric" in df.columns else 1.0
         st.write(f"Variant {v} Shapiro-Wilk p-value:", p_val)
         plt.hist(df[df["variant"] == v]["metric"], bins=10, alpha=0.5, label=str(v))
         if p_val < 0.05:
@@ -105,12 +106,12 @@ def check_normality(df):
         """)
 
 
-def run_ab_test(df):
+def 
     st.subheader("📈 Run A/B Test")
     alternative = st.radio("Test Type", ["Two-sided", "One-sided"])
     var = df["variant"].unique()
-    data1 = df[df["variant"] == var[0]]["metric"]
-    data2 = df[df["variant"] == var[1]]["metric"]
+    data1 = df[df["variant"] == var[0]]["metric"] if "variant" in df.columns and "metric" in df.columns else pd.Series(dtype=float)
+    data2 = df[df["variant"] == var[1]]["metric"] if "variant" in df.columns and "metric" in df.columns else pd.Series(dtype=float)
     stat, p = ttest_ind(data1, data2, equal_var=False)
     if alternative == "One-sided":
         p /= 2
@@ -120,7 +121,7 @@ def run_ab_test(df):
     else:
         st.info("ℹ️ No significant difference found.")
 
-def run_uplift_modeling(df):
+def 
     st.subheader("📈 Uplift Modeling - T Learner")
     features = st.multiselect("Choose features", [col for col in df.columns if col not in ["variant", "metric"]])
     if not features:
@@ -198,12 +199,12 @@ elif tab == "Check Data Quality":
         st.warning("Please upload or select sample data.")
 elif tab == "Run A/B Test":
     if df is not None:
-        run_ab_test(df)
+        
     else:
         st.warning("Please upload or select sample data.")
 elif tab == "Run Uplift Modeling":
     if df is not None:
-        run_uplift_modeling(df)
+        
     else:
         st.warning("Please upload or select sample data.")
 elif tab == "Pre/Post Trends":
@@ -327,64 +328,117 @@ Use corrections when:
 
 
 
-# --- A/B Test Execution ---
-def run_ab_test(data):
-    st.subheader("📊 A/B Test Results")
+from scipy.stats import mannwhitneyu
 
-    # Variant and Metric Columns
-    variant_col = st.selectbox("Select Variant Column", data.columns, index=data.columns.get_loc("variant"))
-    metric_col = st.selectbox("Select Metric Column", data.columns, index=data.columns.get_loc("metric"))
+def 
+    st.subheader("⚖️ A/B Testing Results")
+    if "variant" not in df.columns or "metric" not in df.columns:
+        st.warning("❗ Please upload data with 'variant' and 'metric' columns.")
+        return
 
-    # Check normality
-    from scipy.stats import shapiro, mannwhitneyu, ttest_ind
+    variants = df["variant"].unique()
+    if len(variants) != 2:
+        st.warning("❗ A/B test requires exactly two variants.")
+        return
 
-    a = data[data[variant_col] == "A"][metric_col]
-    b = data[data[variant_col] == "B"][metric_col]
+    group1 = df[df["variant"] == variants[0]]["metric"]
+    group2 = df[df["variant"] == variants[1]]["metric"]
 
-    _, p_a = shapiro(a)
-    _, p_b = shapiro(b)
-    normal = p_a > 0.05 and p_b > 0.05
-
-    st.write("Shapiro-Wilk p-values — A: {:.4f}, B: {:.4f}".format(p_a, p_b))
-    st.write("Data is {}normal".format("" if normal else "not "))
+    # Normality check
+    p1 = shapiro(group1)[1]
+    p2 = shapiro(group2)[1]
+    normal = p1 > 0.05 and p2 > 0.05
 
     if normal:
-        t_stat, p_val = ttest_ind(a, b)
-        test_used = "T-Test"
+        stat, p = ttest_ind(group1, group2)
+        st.success(f"Two-sided T-test: p = {p:.4f}")
     else:
-        t_stat, p_val = mannwhitneyu(a, b)
-        test_used = "Mann-Whitney U"
+        stat, p = mannwhitneyu(group1, group2)
+        st.success(f"Mann-Whitney U Test: p = {p:.4f}")
 
-    st.write(f"📈 Test Used: {test_used}")
-    st.metric("P-Value", f"{p_val:.4f}")
 
-    # Optional: Segment-Based Testing
-    if st.checkbox("🔍 Run Segmented A/B Test"):
-        segment_col = st.selectbox("Segment By", [col for col in data.columns if col not in [variant_col, metric_col]])
-        segments = data[segment_col].dropna().unique()
 
-        for seg in segments:
-            st.markdown(f"#### Segment: {seg}")
-            seg_data = data[data[segment_col] == seg]
-            a_seg = seg_data[seg_data[variant_col] == "A"][metric_col]
-            b_seg = seg_data[seg_data[variant_col] == "B"][metric_col]
+def 
+    st.subheader("🔍 Segmented A/B Testing")
+    if "variant" not in df.columns or "metric" not in df.columns:
+        st.warning("❗ Please upload data with 'variant' and 'metric' columns.")
+        return
 
-            try:
-                _, p_seg_a = shapiro(a_seg)
-                _, p_seg_b = shapiro(b_seg)
-                seg_normal = p_seg_a > 0.05 and p_seg_b > 0.05
+    segment_col = st.selectbox("Select a segmentation feature", [col for col in df.columns if col not in ["variant", "metric"]])
+    segments = df[segment_col].unique()
 
-                if seg_normal:
-                    t_stat_seg, p_seg = ttest_ind(a_seg, b_seg)
-                    method = "T-Test"
-                else:
-                    t_stat_seg, p_seg = mannwhitneyu(a_seg, b_seg)
-                    method = "Mann-Whitney U"
+    for segment in segments:
+        st.markdown(f"#### Segment: {segment}")
+        subset = df[df[segment_col] == segment]
+        variants = subset["variant"].unique()
 
-                st.write(f"{method} p-value: {p_seg:.4f}")
-            except:
-                st.warning("Insufficient data in this segment.")
+        if len(variants) != 2:
+            st.warning(f"⚠️ Skipping segment '{segment}' (needs 2 variants).")
+            continue
 
-# Inject call after file is loaded
-if df is not None:
+        group1 = subset[subset["variant"] == variants[0]]["metric"]
+        group2 = subset[subset["variant"] == variants[1]]["metric"]
+
+        stat, p = ttest_ind(group1, group2)
+        st.write(f"p-value = {p:.4f}")
+
+
+
+import streamlit as st
+
+st.set_page_config(page_title="A/B Testing Dashboard", layout="wide")
+
+# Create page tabs
+tabs = st.tabs(["📏 Sample Size Calculator", "🧪 A/B Testing", "📊 SRM & Normality Checks", 
+                "🔍 Segmented A/B Testing", "📈 Uplift Modeling", "🧪 Multiple Testing Correction"])
+
+with tabs[0]:
+    sample_size_calculator()
+
+with tabs[1]:
     run_ab_test(df)
+
+with tabs[2]:
+    check_srm_and_normality(df)
+
+with tabs[3]:
+    run_segmented_ab_test(df)
+
+with tabs[4]:
+    run_uplift_modeling(df)
+
+
+with tabs[6]:
+    st.header("📉 Pre/Post Trend Analysis")
+    st.markdown("Upload time-series data to evaluate trends before and after experiment start.")
+
+    if df is not None:
+        if "timestamp" in df.columns and "metric" in df.columns and "variant" in df.columns:
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
+            pre_period = st.slider("Select Pre-period", min_value=min(df["timestamp"]), max_value=max(df["timestamp"]))
+            post_period = st.slider("Select Post-period", min_value=min(df["timestamp"]), max_value=max(df["timestamp"]))
+
+            fig, ax = plt.subplots()
+            for v in df["variant"].unique():
+                variant_df = df[df["variant"] == v]
+                variant_df = variant_df.sort_values("timestamp")
+                ax.plot(variant_df["timestamp"], variant_df["metric"], label=v)
+            ax.axvline(pre_period, color="blue", linestyle="--", label="Pre-period Start")
+            ax.axvline(post_period, color="red", linestyle="--", label="Post-period Start")
+            ax.set_title("Pre/Post Trend by Variant")
+            ax.legend()
+            st.pyplot(fig)
+
+            if st.checkbox("Show Explanation"):
+                st.markdown("""
+                **Why Pre/Post Trend Analysis?**
+                This helps detect biases or external changes occurring before or during the test window.
+                Ensure 'parallel trends' between variants pre-experiment to validate A/B assumptions.
+                """)
+        else:
+            st.warning("Data must include `timestamp`, `metric`, and `variant` columns to view trends.")
+    else:
+        st.info("Please upload data from the sidebar to continue.")
+
+with tabs[5]:
+    run_multiple_testing_correction(df)
