@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -18,7 +17,8 @@ df = None
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 elif use_sample:
-    df = pd.read_csv("sample_data.csv")
+    df = pd.read_csv("sample_ab_test_dataset.csv")
+
 
 if use_sample:
     st.markdown("### 👁️ Sample Dataset Preview")
@@ -324,3 +324,67 @@ Use corrections when:
 - You're slicing by cohorts
 - You're running the same test across multiple variants
             """)
+
+
+
+# --- A/B Test Execution ---
+def run_ab_test(data):
+    st.subheader("📊 A/B Test Results")
+
+    # Variant and Metric Columns
+    variant_col = st.selectbox("Select Variant Column", data.columns, index=data.columns.get_loc("variant"))
+    metric_col = st.selectbox("Select Metric Column", data.columns, index=data.columns.get_loc("metric"))
+
+    # Check normality
+    from scipy.stats import shapiro, mannwhitneyu, ttest_ind
+
+    a = data[data[variant_col] == "A"][metric_col]
+    b = data[data[variant_col] == "B"][metric_col]
+
+    _, p_a = shapiro(a)
+    _, p_b = shapiro(b)
+    normal = p_a > 0.05 and p_b > 0.05
+
+    st.write("Shapiro-Wilk p-values — A: {:.4f}, B: {:.4f}".format(p_a, p_b))
+    st.write("Data is {}normal".format("" if normal else "not "))
+
+    if normal:
+        t_stat, p_val = ttest_ind(a, b)
+        test_used = "T-Test"
+    else:
+        t_stat, p_val = mannwhitneyu(a, b)
+        test_used = "Mann-Whitney U"
+
+    st.write(f"📈 Test Used: {test_used}")
+    st.metric("P-Value", f"{p_val:.4f}")
+
+    # Optional: Segment-Based Testing
+    if st.checkbox("🔍 Run Segmented A/B Test"):
+        segment_col = st.selectbox("Segment By", [col for col in data.columns if col not in [variant_col, metric_col]])
+        segments = data[segment_col].dropna().unique()
+
+        for seg in segments:
+            st.markdown(f"#### Segment: {seg}")
+            seg_data = data[data[segment_col] == seg]
+            a_seg = seg_data[seg_data[variant_col] == "A"][metric_col]
+            b_seg = seg_data[seg_data[variant_col] == "B"][metric_col]
+
+            try:
+                _, p_seg_a = shapiro(a_seg)
+                _, p_seg_b = shapiro(b_seg)
+                seg_normal = p_seg_a > 0.05 and p_seg_b > 0.05
+
+                if seg_normal:
+                    t_stat_seg, p_seg = ttest_ind(a_seg, b_seg)
+                    method = "T-Test"
+                else:
+                    t_stat_seg, p_seg = mannwhitneyu(a_seg, b_seg)
+                    method = "Mann-Whitney U"
+
+                st.write(f"{method} p-value: {p_seg:.4f}")
+            except:
+                st.warning("Insufficient data in this segment.")
+
+# Inject call after file is loaded
+if df is not None:
+    run_ab_test(df)
