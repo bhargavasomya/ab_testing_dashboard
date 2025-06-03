@@ -1,5 +1,5 @@
 
-# 🧪 A/B Testing Power Tool (Streamlit Dashboard)
+[# 🧪 A/B Testing Power Tool](https://abtestingdashboard.streamlit.app/)
 
 This interactive Streamlit app allows you to perform end-to-end A/B testing workflows, including power analysis, SRM checks, normality testing, uplift modeling, segmented A/B testing, and more. It’s designed for product analysts, data scientists, and growth teams to quickly analyze experiments with statistical rigor.
 
@@ -8,16 +8,9 @@ This interactive Streamlit app allows you to perform end-to-end A/B testing work
 ## 🚀 Features
 
 ### ✅ Sample Size Calculator
-- Input baseline conversion rate, MDE, α, and power to compute required users per group.
+- Input baseline conversion rate, MDE, α, and power to compute the required users per group.
 - Uses two-proportion z-test formula for binary outcomes.
-- Includes educational explanation and LaTeX-rendered formula.
-
-### 🧮 Power Analysis Formula
-\(
-n = \left( \frac{Z_{1 - \alpha/2} + Z_{1 - \beta}}{\text{MDE} / \sqrt{2 \cdot p \cdot (1 - p)}} \right)^2
-\)
-
-Where `p` is the baseline conversion rate, `MDE` is minimum detectable effect.
+- Includes educational explanation of Power Analysis. 
 
 ---
 
@@ -26,7 +19,7 @@ Where `p` is the baseline conversion rate, `MDE` is minimum detectable effect.
 - Detects experiment allocation bugs.
 
 ### 🧪 Normality Testing
-- Shapiro-Wilk test to determine if data is normally distributed.
+- Shapiro-Wilk test to determine if the data is normally distributed.
 - Recommends alternatives (Mann-Whitney U) if violated.
 
 ### 🎯 A/B Test Module
