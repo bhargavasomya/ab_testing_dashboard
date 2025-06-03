@@ -178,6 +178,7 @@ def run_ab_test(df):
             st.success("✅ Statistically significant difference (non-parametric test).")
         else:
             st.info("ℹ️ No significant difference found.")
+    
 
     # CI plot
     st.write("### Confidence Interval for Mean Difference")
@@ -190,6 +191,53 @@ def run_ab_test(df):
     ax.set_ylabel("Difference in Means")
     ax.set_xticks([])
     st.pyplot(fig)
+    with st.expander("📘 Understanding Effect Sizes"):
+    st.markdown("""
+Effect size quantifies the **magnitude** of the difference between groups:
+
+- **Cohen’s d**: Standardized difference in means (for t-tests). Rules of thumb:
+    - 0.2 = small effect
+    - 0.5 = medium
+    - 0.8 = large
+- **Cliff’s Delta**: Proportion of values in one group higher than in the other (non-parametric).
+
+Use effect sizes alongside p-values to interpret practical significance, not just statistical.
+    """)
+    with st.expander("📘 What is a Confidence Interval?"):
+    st.markdown("""
+A **confidence interval (CI)** gives a range of values within which we expect the true population parameter (e.g., mean difference or uplift) to fall, with a certain level of confidence (typically 95%).
+
+---
+
+### ✅ Key Concepts
+
+- A 95% confidence interval means:  
+  *“If we repeated this experiment 100 times, we expect the true effect to lie within this interval in 95 of those experiments.”*
+
+- CI = **[lower bound, upper bound]**
+
+---
+
+### 💡 Why It Matters
+
+- It helps **quantify uncertainty** in your estimates.
+- If a 95% CI for the mean difference **does not include zero**, the result is statistically significant at α = 0.05.
+- CIs offer more information than just p-values, providing **both direction and size** of the effect.
+
+---
+
+### 🛠️ Interpretation Examples
+
+- ✅ CI = [0.01, 0.05]: The treatment improves conversion by 1–5%.
+- ⚠️ CI = [-0.02, 0.04]: The effect is inconclusive (it could be positive or negative).
+- ❌ CI = [-0.05, -0.01]: The treatment has a negative impact.
+
+---
+
+### 📊 Best Practice
+
+Always report CIs alongside p-values and effect sizes to give a **more complete picture** of your experiment results.
+    """)
 
 
 def run_uplift_modeling(df):
@@ -210,6 +258,20 @@ def run_uplift_modeling(df):
     uplift = model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
     st.write("Avg uplift:", np.mean(uplift))
     st.line_chart(uplift)
+    with st.expander("📘 What is Uplift Modeling?"):
+    st.markdown("""
+Uplift modeling estimates the **individual-level impact** of the treatment rather than just group-level averages.
+
+We use a **T-Learner** approach:
+- Train one model on the **treatment group**
+- Train another on the **control group**
+- Subtract predictions to get **uplift score** per user
+
+Why use it?
+- Identify **who benefits most** from the treatment.
+- Target interventions more effectively.
+- Go beyond “did it work?” to “for whom did it work?”
+    """)
 
 def run_trend_check(df):
     st.subheader("📈 Pre/Post Trend Analysis")
@@ -222,6 +284,16 @@ def run_trend_check(df):
     daily.plot(ax=ax)
     ax.set_title("Parallel Trends")
     st.pyplot(fig)
+    with st.expander("📘 Why Check Pre/Post Trends?"):
+    st.markdown("""
+Pre/post trend analysis checks whether groups followed similar trends before the test started.
+
+Why important?
+- If pre-trends differ, differences after the test could be due to **baseline drift**, not the treatment.
+- Ensures **parallel trend assumption**, critical for causal inference in time-series experiments.
+
+We visualize daily metrics per group to check alignment before and divergence after launch.
+    """)
 
 def apply_fdr_correction(pvals_dict):
     st.subheader("🎯 Multiple Testing Corrections")
@@ -235,6 +307,19 @@ def apply_fdr_correction(pvals_dict):
         df_p["adj_p"] = df_p["p_value"] * len(df_p) / df_p["rank"]
     df_p["significant"] = df_p["adj_p"] < 0.05
     st.write(df_p)
+    with st.expander("📘 Why Apply Multiple Testing Correction?"):
+    st.markdown("""
+If you're testing **many metrics** (or many variants), the chance of a **false positive** increases.
+
+We apply:
+- **Bonferroni Correction**: Very strict, divides significance level by number of tests.
+- **Benjamini-Hochberg (FDR)**: Less conservative, controls the expected proportion of false positives.
+
+Use when:
+- Comparing multiple metrics
+- Running tests on several cohorts
+- Running many variants in the same experiment
+    """)
 
 
 
@@ -271,6 +356,16 @@ def run_segmented_ab_test(df):
 
         stat, p = ttest_ind(group1, group2)
         st.write(f"p-value = {p:.4f}")
+        with st.expander("📘 What is Segmented A/B Testing?"):
+    st.markdown("""
+Segmented A/B testing analyzes how different user groups (segments) respond to the treatment.
+
+Why use it?
+- Your experiment might work better for **certain user types** (e.g., mobile users vs desktop, new vs returning).
+- Helps identify **heterogeneous treatment effects** and tailor product experiences.
+
+Each segment is tested separately to reveal nuanced insights.
+    """)
 
 # --- Navigation ---
 tab = st.sidebar.radio("Choose Tool", [
