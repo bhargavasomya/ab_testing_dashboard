@@ -76,12 +76,12 @@ Where:
 
         st.markdown("### 🧮 Example Calculation")
         st.markdown("Say you have:")
-st.markdown("""
+        st.markdown("""
 - Baseline conversion = 10%  
 - MDE = 5%  
 - α = 0.05  
 - Power = 0.80
-""")
+    """)
 
         st.markdown("Then:")
         st.latex(r"""
