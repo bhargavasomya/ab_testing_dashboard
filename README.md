@@ -1,38 +1,95 @@
-# 🧪 [A/B Testing Playground](https://abtestingdashboard.streamlit.app/)
 
+# 🧪 A/B Testing Power Tool (Streamlit Dashboard)
 
-- Calculate sample size using power analysis
-- Upload A/B test data and check data quality
-- Run Frequentist and Bayesian A/B tests
-- Visualize feature balance and distribution
-- Perform segmented and multi-variant testing
-- Learn the *why* behind every step!
+This interactive Streamlit app allows you to perform end-to-end A/B testing workflows, including power analysis, SRM checks, normality testing, uplift modeling, segmented A/B testing, and more. It’s designed for product analysts, data scientists, and growth teams to quickly analyze experiments with statistical rigor.
+
+---
 
 ## 🚀 Features
 
-- ✅ Sample size calculator with power analysis explanation
-- ✅ Upload data with `variant` and `metric` columns
-- ✅ Support for demographic features (age, gender, income, etc.)
-- ✅ SRM detection using Chi-square test
-- ✅ Normality check and adaptive test selection
-- ✅ Frequentist and Bayesian A/B testing
-- ✅ Multi-metric and multi-variant testing
-- ✅ Segment-level comparisons
-- ✅ Educational explanations at every step
+### ✅ Sample Size Calculator
+- Input baseline conversion rate, MDE, α, and power to compute required users per group.
+- Uses two-proportion z-test formula for binary outcomes.
+- Includes educational explanation and LaTeX-rendered formula.
 
-## 📂 File Structure
+### 🧮 Power Analysis Formula
+\(
+n = \left( \frac{Z_{1 - \alpha/2} + Z_{1 - \beta}}{\text{MDE} / \sqrt{2 \cdot p \cdot (1 - p)}} \right)^2
+\)
 
-- `ab_dashboard.py` — Streamlit app frontend
-- `ab_testing.py` — Core backend functions
-- `requirements.txt` — Python dependencies
+Where `p` is the baseline conversion rate, `MDE` is minimum detectable effect.
 
-## 🧪 How to Run
+---
 
-```bash
-pip install -r requirements.txt
-streamlit run ab_dashboard.py
+### 🔍 SRM (Sample Ratio Mismatch) Check
+- Chi-square goodness-of-fit test between expected and observed group sizes.
+- Detects experiment allocation bugs.
+
+### 🧪 Normality Testing
+- Shapiro-Wilk test to determine if data is normally distributed.
+- Recommends alternatives (Mann-Whitney U) if violated.
+
+### 🎯 A/B Test Module
+- One-sided and two-sided tests.
+- Auto-switch between T-test (for normal data) and Mann-Whitney U test (for non-normal).
+- Computes p-value, confidence interval, and effect size (Cohen’s d or Cliff’s delta).
+
+### 📈 Confidence Intervals
+- Visual plot and interpretation of 95% CI for mean difference.
+
+### 🔬 Segmented A/B Testing
+- Allows testing experiment results across user-defined segments (e.g., platform, country).
+- Identifies heterogeneous treatment effects.
+
+### 📊 Uplift Modeling (T-Learner)
+- Compares model predictions across treatment and control to estimate individual uplift.
+- Useful for targeting optimization.
+
+### 📉 Pre/Post Trend Analysis
+- Checks for parallel trends and detects drift over time.
+- Time-series line chart.
+
+### 🔎 Multiple Testing Corrections
+- Adjusts p-values using Bonferroni or Benjamini-Hochberg (FDR).
+- Helps mitigate false positives when testing multiple metrics.
+
+### 📚 Education Tab
+- Rich educational content for all modules.
+- Beginner to advanced explanations.
+- “Explain Like I’m 5” mode for newcomers.
+
+---
+
+## 📂 How to Use
+
+1. Upload your A/B test dataset with `variant`, `metric`, and optionally `date` and segment columns.
+2. Alternatively, use the built-in sample dataset.
+3. Navigate via the sidebar to choose tools and view analysis.
+
+---
+
+## 📁 Sample Dataset Format
+
+CSV must include:
+
+```
+variant,metric,date,platform
+A,0,2023-01-01,web
+B,1,2023-01-01,web
+...
 ```
 
-## 🌐 Deployment
+---
 
-You can deploy this on [Streamlit Community Cloud](https://streamlit.io/cloud) by linking your GitHub repo and selecting `ab_dashboard.py` as the main file.
+## 🧰 Tech Stack
+
+- Python
+- Streamlit
+- Pandas, NumPy, SciPy, Scikit-learn
+- Seaborn & Matplotlib for visualizations
+
+---
+
+## 👩‍💻 Author
+
+Built with ❤️ by Somya Bhargava for A/B testing enthusiasts and practitioners.
