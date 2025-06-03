@@ -122,6 +122,7 @@ def run_ab_test(df):
         stat, p = ttest_ind(data1, data2)
         if alternative == "One-sided":
             p /= 2
+        st.write(f"**T-test p-value:** {p:.4f}")
         if p < 0.05:
             st.success("✅ Statistically significant difference.")
         else:
@@ -131,6 +132,7 @@ def run_ab_test(df):
         if alternative == "One-sided":
             p /= 2
         if p < 0.05:
+        st.write(f"**Mann-Whitney U p-value:** {p:.4f}")
             st.success("✅ Mann Whitney U Test : Statistically significant difference.")
         else:
             st.info("ℹ️ No significant difference found.")
