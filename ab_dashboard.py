@@ -6,6 +6,7 @@ from scipy.stats import norm, ttest_ind, chi2_contingency, shapiro
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.base import clone
+from scipy.stats import mannwhitneyu
 
 st.set_page_config(layout="wide")
 st.title("🧪 A/B Testing Power Tool")
@@ -112,13 +113,28 @@ def run_ab_test(df):
     data1 = df[df["variant"] == var[0]]["metric"] if "variant" in df.columns and "metric" in df.columns else pd.Series(dtype=float)
     data2 = df[df["variant"] == var[1]]["metric"] if "variant" in df.columns and "metric" in df.columns else pd.Series(dtype=float)
     stat, p = ttest_ind(data1, data2, equal_var=False)
-    if alternative == "One-sided":
-        p /= 2
-    st.write(f"t-stat: {stat:.4f}, p-value: {p:.4f}")
-    if p < 0.05:
-        st.success("✅ Statistically significant difference.")
+    # Normality check
+    p1 = shapiro(data1)[1]
+    p2 = shapiro(data2)[1]
+    normal = p1 > 0.05 and p2 > 0.05
+
+    if normal:
+        stat, p = ttest_ind(data1, data2)
+        if alternative == "One-sided":
+            p /= 2
+        if p < 0.05:
+            st.success("✅ Statistically significant difference.")
+        else:
+            st.info("ℹ️ No significant difference found.")
     else:
-        st.info("ℹ️ No significant difference found.")
+        stat, p = mannwhitneyu(data1, data2)
+        if alternative == "One-sided":
+            p /= 2
+        if p < 0.05:
+            st.success("✅ Mann Whitney U Test : Statistically significant difference.")
+        else:
+            st.info("ℹ️ No significant difference found.")
+        
 
 def run_uplift_modeling(df):
     st.subheader("📈 Uplift Modeling - T Learner")
@@ -176,11 +192,36 @@ def educational_toggle():
     else:
         st.markdown("💡 *A/B tests ask: 'Is version B better than version A?'*")
 
+def run_segmented_ab_test(df):
+    st.subheader("🔍 Segmented A/B Testing")
+    if "variant" not in df.columns or "metric" not in df.columns:
+        st.warning("❗ Please upload data with 'variant' and 'metric' columns.")
+        return
+
+    segment_col = st.selectbox("Select a segmentation feature", [col for col in df.columns if col not in ["variant", "metric"]])
+    segments = df[segment_col].unique()
+
+    for segment in segments:
+        st.markdown(f"#### Segment: {segment}")
+        subset = df[df[segment_col] == segment]
+        variants = subset["variant"].unique()
+
+        if len(variants) != 2:
+            st.warning(f"⚠️ Skipping segment '{segment}' (needs 2 variants).")
+            continue
+
+        group1 = subset[subset["variant"] == variants[0]]["metric"]
+        group2 = subset[subset["variant"] == variants[1]]["metric"]
+
+        stat, p = ttest_ind(group1, group2)
+        st.write(f"p-value = {p:.4f}")
+
 # --- Navigation ---
 tab = st.sidebar.radio("Choose Tool", [
     "Sample Size Calculator",
     "Check Data Quality",
     "Run A/B Test",
+    "Run Segmented A/B Test"
     "Run Uplift Modeling",
     "Pre/Post Trends",
     "Multiple Testing Correction",
@@ -199,6 +240,11 @@ elif tab == "Check Data Quality":
 elif tab == "Run A/B Test":
     if df is not None:
         run_ab_test(df)
+    else:
+        st.warning("Please upload or select sample data.")
+elif tab == "Run Segmented A/B Test":
+    if df is not None:
+        run_segmented_ab_test(df)
     else:
         st.warning("Please upload or select sample data.")
 elif tab == "Run Uplift Modeling":
@@ -325,63 +371,6 @@ Use corrections when:
 - You're slicing by cohorts
 - You're running the same test across multiple variants
             """)
-
-
-
-from scipy.stats import mannwhitneyu
-
-def run_ab_test(df):
-    st.subheader("⚖️ A/B Testing Results")
-    if "variant" not in df.columns or "metric" not in df.columns:
-        st.warning("❗ Please upload data with 'variant' and 'metric' columns.")
-        return
-
-    variants = df["variant"].unique()
-    if len(variants) != 2:
-        st.warning("❗ A/B test requires exactly two variants.")
-        return
-
-    group1 = df[df["variant"] == variants[0]]["metric"]
-    group2 = df[df["variant"] == variants[1]]["metric"]
-
-    # Normality check
-    p1 = shapiro(group1)[1]
-    p2 = shapiro(group2)[1]
-    normal = p1 > 0.05 and p2 > 0.05
-
-    if normal:
-        stat, p = ttest_ind(group1, group2)
-        st.success(f"Two-sided T-test: p = {p:.4f}")
-    else:
-        stat, p = mannwhitneyu(group1, group2)
-        st.success(f"Mann-Whitney U Test: p = {p:.4f}")
-
-
-
-def run_segmented_ab_test(df):
-    st.subheader("🔍 Segmented A/B Testing")
-    if "variant" not in df.columns or "metric" not in df.columns:
-        st.warning("❗ Please upload data with 'variant' and 'metric' columns.")
-        return
-
-    segment_col = st.selectbox("Select a segmentation feature", [col for col in df.columns if col not in ["variant", "metric"]])
-    segments = df[segment_col].unique()
-
-    for segment in segments:
-        st.markdown(f"#### Segment: {segment}")
-        subset = df[df[segment_col] == segment]
-        variants = subset["variant"].unique()
-
-        if len(variants) != 2:
-            st.warning(f"⚠️ Skipping segment '{segment}' (needs 2 variants).")
-            continue
-
-        group1 = subset[subset["variant"] == variants[0]]["metric"]
-        group2 = subset[subset["variant"] == variants[1]]["metric"]
-
-        stat, p = ttest_ind(group1, group2)
-        st.write(f"p-value = {p:.4f}")
-
 
 
 # --- Navigation ---
