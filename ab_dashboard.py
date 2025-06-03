@@ -198,11 +198,12 @@ elif tab == "Check Data Quality":
         st.warning("Please upload or select sample data.")
 elif tab == "Run A/B Test":
     if df is not None:
-        
+        run_ab_test(df)
     else:
         st.warning("Please upload or select sample data.")
 elif tab == "Run Uplift Modeling":
     if df is not None:
+        run_uplift_modeling(df)
         
     else:
         st.warning("Please upload or select sample data.")
