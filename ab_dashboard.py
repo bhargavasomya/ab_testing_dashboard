@@ -388,58 +388,58 @@ Use corrections when:
 # --- Run Modules ---
 
 
-# Create page tabs
-tabs = st.tabs(["📏 Sample Size Calculator", "📊 SRM & Normality Checks", "🧪 A/B Testing", 
-                "🔍 Segmented A/B Testing", "📈 Uplift Modeling", "🧪 Multiple Testing Correction"])
+# # Create page tabs
+# tabs = st.tabs(["📏 Sample Size Calculator", "📊 SRM & Normality Checks", "🧪 A/B Testing", 
+#                 "🔍 Segmented A/B Testing", "📈 Uplift Modeling", "🧪 Multiple Testing Correction"])
 
-with tabs[0]:
-    sample_size_calculator()
+# with tabs[0]:
+#     sample_size_calculator()
 
-with tabs[1]:
-    check_srm_and_normality(df)
+# with tabs[1]:
+#     check_srm_and_normality(df)
 
-with tabs[2]:
-    run_ab_test(df)
+# with tabs[2]:
+#     run_ab_test(df)
 
 
-with tabs[3]:
-    run_segmented_ab_test(df)
+# with tabs[3]:
+#     run_segmented_ab_test(df)
 
-with tabs[4]:
-    run_uplift_modeling(df)
+# with tabs[4]:
+#     run_uplift_modeling(df)
 
-with tabs[5]:
-    run_multiple_testing_correction(df)
+# with tabs[5]:
+#     run_multiple_testing_correction(df)
 
-with tabs[6]:
-    st.header("📉 Pre/Post Trend Analysis")
-    st.markdown("Upload time-series data to evaluate trends before and after experiment start.")
+# with tabs[6]:
+#     st.header("📉 Pre/Post Trend Analysis")
+#     st.markdown("Upload time-series data to evaluate trends before and after experiment start.")
 
-    if df is not None:
-        if "timestamp" in df.columns and "metric" in df.columns and "variant" in df.columns:
-            df["timestamp"] = pd.to_datetime(df["timestamp"])
-            pre_period = st.slider("Select Pre-period", min_value=min(df["timestamp"]), max_value=max(df["timestamp"]))
-            post_period = st.slider("Select Post-period", min_value=min(df["timestamp"]), max_value=max(df["timestamp"]))
+#     if df is not None:
+#         if "timestamp" in df.columns and "metric" in df.columns and "variant" in df.columns:
+#             df["timestamp"] = pd.to_datetime(df["timestamp"])
+#             pre_period = st.slider("Select Pre-period", min_value=min(df["timestamp"]), max_value=max(df["timestamp"]))
+#             post_period = st.slider("Select Post-period", min_value=min(df["timestamp"]), max_value=max(df["timestamp"]))
 
-            fig, ax = plt.subplots()
-            for v in df["variant"].unique():
-                variant_df = df[df["variant"] == v]
-                variant_df = variant_df.sort_values("timestamp")
-                ax.plot(variant_df["timestamp"], variant_df["metric"], label=v)
-            ax.axvline(pre_period, color="blue", linestyle="--", label="Pre-period Start")
-            ax.axvline(post_period, color="red", linestyle="--", label="Post-period Start")
-            ax.set_title("Pre/Post Trend by Variant")
-            ax.legend()
-            st.pyplot(fig)
+#             fig, ax = plt.subplots()
+#             for v in df["variant"].unique():
+#                 variant_df = df[df["variant"] == v]
+#                 variant_df = variant_df.sort_values("timestamp")
+#                 ax.plot(variant_df["timestamp"], variant_df["metric"], label=v)
+#             ax.axvline(pre_period, color="blue", linestyle="--", label="Pre-period Start")
+#             ax.axvline(post_period, color="red", linestyle="--", label="Post-period Start")
+#             ax.set_title("Pre/Post Trend by Variant")
+#             ax.legend()
+#             st.pyplot(fig)
 
-            if st.checkbox("Show Explanation"):
-                st.markdown("""
-                **Why Pre/Post Trend Analysis?**
-                This helps detect biases or external changes occurring before or during the test window.
-                Ensure 'parallel trends' between variants pre-experiment to validate A/B assumptions.
-                """)
-        else:
-            st.warning("Data must include `timestamp`, `metric`, and `variant` columns to view trends.")
-    else:
-        st.info("Please upload data from the sidebar to continue.")
+#             if st.checkbox("Show Explanation"):
+#                 st.markdown("""
+#                 **Why Pre/Post Trend Analysis?**
+#                 This helps detect biases or external changes occurring before or during the test window.
+#                 Ensure 'parallel trends' between variants pre-experiment to validate A/B assumptions.
+#                 """)
+#         else:
+#             st.warning("Data must include `timestamp`, `metric`, and `variant` columns to view trends.")
+#     else:
+#         st.info("Please upload data from the sidebar to continue.")
 
