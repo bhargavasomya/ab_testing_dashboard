@@ -1,5 +1,5 @@
 
-[# 🧪 A/B Testing Power Tool](https://abtestingdashboard.streamlit.app/)
+# [🧪 A/B Testing Power Tool](https://abtestingdashboard.streamlit.app/)
 
 This interactive Streamlit app allows you to perform end-to-end A/B testing workflows, including power analysis, SRM checks, normality testing, uplift modeling, segmented A/B testing, and more. It’s designed for product analysts, data scientists, and growth teams to quickly analyze experiments with statistical rigor.
 
