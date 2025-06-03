@@ -2,11 +2,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from scipy.stats import norm, ttest_ind, chi2_contingency, shapiro
+from scipy.stats import norm, ttest_ind, chi2_contingency, shapiro, mannwhitneyu
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.base import clone
-from scipy.stats import mannwhitneyu
+import seaborn as sns
+import math
 
 st.set_page_config(layout="wide")
 st.title("🧪 A/B Testing Power Tool")
@@ -107,36 +108,89 @@ def check_normality(df):
         """)
 
 
+def cohens_d(x, y):
+    nx = len(x)
+    ny = len(y)
+    dof = nx + ny - 2
+    return (x.mean() - y.mean()) / math.sqrt(((nx - 1)*x.std()**2 + (ny - 1)*y.std()**2) / dof)
+
+def cliffs_delta(x, y):
+    nx, ny = len(x), len(y)
+    count = sum((xi > yj) - (xi < yj) for xi in x for yj in y)
+    return count / (nx * ny)
+
+def mean_confidence_interval(data1, data2, confidence=0.95):
+    n1, n2 = len(data1), len(data2)
+    m1, m2 = np.mean(data1), np.mean(data2)
+    se = np.sqrt(np.var(data1, ddof=1)/n1 + np.var(data2, ddof=1)/n2)
+    diff = m1 - m2
+    z = norm.ppf(1 - (1 - confidence) / 2)
+    return diff - z*se, diff + z*se
+
 def run_ab_test(df):
+    st.subheader("🎯 A/B Test")
     alternative = st.radio("Test Type", ["Two-sided", "One-sided"])
+    
+    if "variant" not in df.columns or "metric" not in df.columns:
+        st.warning("Data must contain 'variant' and 'metric' columns.")
+        return
+
     var = df["variant"].unique()
-    data1 = df[df["variant"] == var[0]]["metric"] if "variant" in df.columns and "metric" in df.columns else pd.Series(dtype=float)
-    data2 = df[df["variant"] == var[1]]["metric"] if "variant" in df.columns and "metric" in df.columns else pd.Series(dtype=float)
-    stat, p = ttest_ind(data1, data2, equal_var=False)
+    if len(var) != 2:
+        st.warning("A/B test requires exactly two variants.")
+        return
+
+    data1 = df[df["variant"] == var[0]]["metric"]
+    data2 = df[df["variant"] == var[1]]["metric"]
+
+    # Visualization: histograms
+    st.write("### Distribution of Metrics")
+    fig, ax = plt.subplots()
+    sns.histplot(data1, color="blue", kde=True, label=f"Variant {var[0]}", ax=ax)
+    sns.histplot(data2, color="green", kde=True, label=f"Variant {var[1]}", ax=ax)
+    ax.legend()
+    st.pyplot(fig)
+
     # Normality check
     p1 = shapiro(data1)[1]
     p2 = shapiro(data2)[1]
     normal = p1 > 0.05 and p2 > 0.05
 
     if normal:
-        stat, p = ttest_ind(data1, data2)
+        stat, p = ttest_ind(data1, data2, equal_var=False)
         if alternative == "One-sided":
             p /= 2
         st.write(f"**T-test p-value:** {p:.4f}")
+        st.write(f"**Effect Size (Cohen's d):** {cohens_d(data1, data2):.3f}")
+        ci_low, ci_high = mean_confidence_interval(data1, data2)
+        st.write(f"**95% CI for Mean Difference:** [{ci_low:.3f}, {ci_high:.3f}]")
         if p < 0.05:
             st.success("✅ Statistically significant difference.")
         else:
             st.info("ℹ️ No significant difference found.")
     else:
-        stat, p = mannwhitneyu(data1, data2)
+        stat, p = mannwhitneyu(data1, data2, alternative="two-sided" if alternative == "Two-sided" else "less")
         if alternative == "One-sided":
             p /= 2
-        if p < 0.05:
         st.write(f"**Mann-Whitney U p-value:** {p:.4f}")
-            st.success("✅ Mann Whitney U Test : Statistically significant difference.")
+        st.write(f"**Effect Size (Cliff's Delta):** {cliffs_delta(data1.tolist(), data2.tolist()):.3f}")
+        if p < 0.05:
+            st.success("✅ Statistically significant difference (non-parametric test).")
         else:
             st.info("ℹ️ No significant difference found.")
-        
+
+    # CI plot
+    st.write("### Confidence Interval for Mean Difference")
+    ci_low, ci_high = mean_confidence_interval(data1, data2)
+    fig, ax = plt.subplots()
+    ax.errorbar(x=0, y=np.mean(data1) - np.mean(data2), yerr=[[np.mean(data1) - np.mean(data2) - ci_low], [ci_high - (np.mean(data1) - np.mean(data2))]],
+                fmt='o', capsize=10)
+    ax.axhline(0, color='red', linestyle='--')
+    ax.set_title("Mean Difference with 95% CI")
+    ax.set_ylabel("Difference in Means")
+    ax.set_xticks([])
+    st.pyplot(fig)
+
 
 def run_uplift_modeling(df):
     st.subheader("📈 Uplift Modeling - T Learner")
