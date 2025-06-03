@@ -384,22 +384,34 @@ def run_segmented_ab_test(df):
 
 
 
-import streamlit as st
+# --- Navigation ---
+# tab = st.sidebar.radio("Choose Tool", [
+#     "Sample Size Calculator",
+#     "Check Data Quality",
+#     "Run A/B Test",
+#     "Run Segmented A/B Test"
+#     "Run Uplift Modeling",
+#     "Pre/Post Trends",
+#     "Multiple Testing Correction",
+#         "Education"
+# ])
 
-st.set_page_config(page_title="A/B Testing Dashboard", layout="wide")
+# --- Run Modules ---
+
 
 # Create page tabs
-tabs = st.tabs(["📏 Sample Size Calculator", "🧪 A/B Testing", "📊 SRM & Normality Checks", 
+tabs = st.tabs(["📏 Sample Size Calculator", "📊 SRM & Normality Checks", "🧪 A/B Testing", 
                 "🔍 Segmented A/B Testing", "📈 Uplift Modeling", "🧪 Multiple Testing Correction"])
 
 with tabs[0]:
     sample_size_calculator()
 
 with tabs[1]:
-    run_ab_test(df)
+    check_srm_and_normality(df)
 
 with tabs[2]:
-    check_srm_and_normality(df)
+    run_ab_test(df)
+
 
 with tabs[3]:
     run_segmented_ab_test(df)
@@ -407,6 +419,8 @@ with tabs[3]:
 with tabs[4]:
     run_uplift_modeling(df)
 
+with tabs[5]:
+    run_multiple_testing_correction(df)
 
 with tabs[6]:
     st.header("📉 Pre/Post Trend Analysis")
@@ -440,5 +454,3 @@ with tabs[6]:
     else:
         st.info("Please upload data from the sidebar to continue.")
 
-with tabs[5]:
-    run_multiple_testing_correction(df)
